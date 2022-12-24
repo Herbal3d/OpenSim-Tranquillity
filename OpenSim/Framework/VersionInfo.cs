@@ -49,12 +49,12 @@ namespace OpenSim
 
         public static string Version
         {
-            get { return GetVersionString(VersionNumber, VERSION_FLAVOUR); }
+            get { return GetVersionString(VersionNumber, Release, VERSION_FLAVOUR); }
         }
 
-        public static string GetVersionString(string versionNumber, Flavour flavour)
+        public static string GetVersionString(string versionNumber, string release, Flavour flavour)
         {
-            string versionString = "OpenSim-NGC " + versionNumber + "R" + Release + " Yeti " + flavour;
+            string versionString = $"OpenSim-NGC {versionNumber}.R{release} {flavour}";
             return versionString.PadRight(VERSIONINFO_VERSION_LENGTH);
         }
 
