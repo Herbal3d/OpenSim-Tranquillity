@@ -237,33 +237,33 @@ namespace NSL.Certificate.Tools
     }
 
 
-    /// <summary>
-    /// class NSL Certificate Policy
-    /// </summary>
-    public class NSLCertificatePolicy : ICertificatePolicy
-    {
-        /// <summary>
-        /// Check Validation Result
-        /// </summary>
-        /// <param name="srvPoint"></param>
-        /// <param name="certificate"></param>
-        /// <param name="request"></param>
-        /// <param name="certificateProblem"></param>
-        /// <returns></returns>
-        public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem)
-        {
-            if (certificateProblem == 0 ||              //normal
-                certificateProblem == -2146762487 ||    //Not trusted?
-                certificateProblem == -2146762495 ||    //Expired
-                certificateProblem == -2146762481)
-            {   //Incorrect name?
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-    }
+    ///// <summary>
+    ///// class NSL Certificate Policy
+    ///// </summary>
+    //public class NSLCertificatePolicy : ICertificatePolicy
+    //{
+    //    /// <summary>
+    //    /// Check Validation Result
+    //    /// </summary>
+    //    /// <param name="srvPoint"></param>
+    //    /// <param name="certificate"></param>
+    //    /// <param name="request"></param>
+    //    /// <param name="certificateProblem"></param>
+    //    /// <returns></returns>
+    //    public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem)
+    //    {
+    //        if (certificateProblem == 0 ||              //normal
+    //            certificateProblem == -2146762487 ||    //Not trusted?
+    //            certificateProblem == -2146762495 ||    //Expired
+    //            certificateProblem == -2146762481)
+    //        {   //Incorrect name?
+    //            return true;
+    //        }
+    //        else
+    //        {
+    //            return false;
+    //        }
+    //    }
+    //}
 
 }
