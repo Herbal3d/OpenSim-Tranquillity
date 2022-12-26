@@ -40,6 +40,15 @@ packages/
 */*/*/*/*/*/*/bin
 .vs/
 .vscode/
+
+bin/OpenSim
+bin/OpenSim.ConsoleClient
+bin/OpenSim.Server.MoneyServer
+bin/OpenSim.Tools.Configger
+bin/OpenSim.Server.MoneyServer
+bin/Robust
+bin/pCampBot
+
 bin/Debug/*.dll
 bin/*.dll.mdb
 bin/*.db
@@ -103,6 +112,7 @@ TAGS
 Makefile.local
 bin/.version
 compile.bat
+compile.sh
 OpenSim/Data/Tests/test-results/
 OpenSim/Framework/Serialization/Tests/test-results/
 OpenSim/Framework/Servers/Tests/test-results/

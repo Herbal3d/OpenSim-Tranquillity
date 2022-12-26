@@ -54,7 +54,7 @@ namespace OpenSim
 
         public static string GetVersionString(string versionNumber, string release, Flavour flavour)
         {
-            string versionString = $"OpenSim-NGC {versionNumber}.R{release} {flavour}";
+            string versionString = $"OpenSim-NGC {versionNumber}.{release} {flavour}";
             return versionString.PadRight(VERSIONINFO_VERSION_LENGTH);
         }
 
