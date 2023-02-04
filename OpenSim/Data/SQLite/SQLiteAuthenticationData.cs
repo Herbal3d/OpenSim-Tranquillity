@@ -61,8 +61,7 @@ namespace OpenSim.Data.SQLite
 
             if (!m_initialized)
             {
-                if (Util.IsWindows())
-                    Util.LoadArchSpecificWindowsDll("sqlite3.dll");
+                DllmapConfigHelper.RegisterAssembly(typeof(SqliteConnection).Assembly);
 
                 m_Connection = new SQLiteConnection(connectionString);
                 m_Connection.Open();

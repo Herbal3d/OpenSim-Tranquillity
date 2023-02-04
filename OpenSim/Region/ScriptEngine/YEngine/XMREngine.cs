@@ -61,8 +61,10 @@ using LSL_Rotation = OpenSim.Region.ScriptEngine.Shared.LSL_Types.Quaternion;
 using LSL_String = OpenSim.Region.ScriptEngine.Shared.LSL_Types.LSLString;
 using LSL_Vector = OpenSim.Region.ScriptEngine.Shared.LSL_Types.Vector3;
 
-[assembly: Addin("YEngine", OpenSim.VersionInfo.AssemblyVersionNumber)]
-[assembly: AddinDependency("OpenSim.Region.Framework", OpenSim.VersionInfo.AssemblyVersionNumber)]
+using SceneScriptEvents = OpenSim.Region.Framework.Scenes.scriptEvents;
+
+[assembly: Addin("YEngine", OpenSim.VersionInfo.VersionNumber)]
+[assembly: AddinDependency("OpenSim.Region.Framework", OpenSim.VersionInfo.VersionNumber)]
 
 namespace OpenSim.Region.ScriptEngine.Yengine
 {
@@ -230,7 +232,7 @@ namespace OpenSim.Region.ScriptEngine.Yengine
                 catch { }
                 try
                 {
-                    oscode = ((Framework.Scenes.scriptEvents)(1ul << i)).ToString();
+                    oscode = ((SceneScriptEvents)(1ul << i)).ToString();
                     Convert.ToInt64(oscode);
                     oscode = "undefined";
                 }
@@ -713,8 +715,8 @@ namespace OpenSim.Region.ScriptEngine.Yengine
                 lock(m_SleepQueue)
                     Monitor.PulseAll(m_SleepQueue);
 
-                if(!m_SleepThread.Join(250))
-                    m_SleepThread.Abort();
+                //if(!m_SleepThread.Join(250))
+                //    m_SleepThread.Abort();
                 m_SleepThread = null;
             }
 
@@ -1550,15 +1552,7 @@ namespace OpenSim.Region.ScriptEngine.Yengine
 
                 bool curRunnning = instance.Running;
                 instance.m_Item.ScriptRunning = curRunnning;
-                IEventQueue eq = World.RequestModuleInterface<IEventQueue>();
-                if(eq == null)
-                {
-                    controllingClient.SendScriptRunningReply(objectID, itemID, curRunnning);
-                }
-                else
-                {
-                    eq.ScriptRunningEvent(objectID, itemID, curRunnning, controllingClient.AgentId);
-                }
+                controllingClient.SendScriptRunningReply(objectID, itemID, curRunnning);
             }
         }
 

@@ -149,17 +149,14 @@ namespace OpenSim.Region.CoreModules.Framework
                 //    agentId, m_scene.RegionInfo.RegionName, capsObjectPath);
 
                 caps = new Caps(MainServer.Instance, m_scene.RegionInfo.ExternalHostName,
-                        (MainServer.Instance == null) ? 0: MainServer.Instance.Port,
+                        (MainServer.Instance is null) ? 0: MainServer.Instance.Port,
                         capsObjectPath, agentId, m_scene.RegionInfo.RegionName);
 
-                m_log.DebugFormat("[CreateCaps]: new caps agent {0}, circuit {1}, path {2}",agentId,
-                    circuitCode,caps.CapsObjectPath);
+                m_log.Debug($"[CreateCaps]: new caps agent {agentId}, circuit {circuitCode}, path {caps.CapsObjectPath}");
 
                 m_capsObjects[circuitCode] = caps;
             }
             m_scene.EventManager.TriggerOnRegisterCaps(agentId, caps);
-            //m_log.ErrorFormat("[CreateCaps]: end {0} ", Util.EnvironmentTickCountSubtract(ts));
-
         }
 
         public void RemoveCaps(UUID agentId, uint circuitCode)
@@ -287,8 +284,7 @@ namespace OpenSim.Region.CoreModules.Framework
             {
                 foreach (KeyValuePair<ulong, string> kvp in m_childrenSeeds[agentID])
                 {
-                    uint x, y;
-                    Util.RegionHandleToRegionLoc(kvp.Key, out x, out y);
+                    Util.RegionHandleToRegionLoc(kvp.Key, out uint x, out uint y);
                     m_log.Info(" >> "+x+", "+y+": "+kvp.Value);
                 }
             }

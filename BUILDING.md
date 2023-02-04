@@ -1,3 +1,14 @@
+# git clone
+
+get or update source from git
+
+ `git clone git://opensimulator.org/git/opensim`
+	
+change to dotnet6 test branch
+
+ `git checkout dotnet6`
+
+
 # Building on Windows
 
 ## Requirements
@@ -18,7 +29,9 @@ Either command will do a NuGet restore (dotnet restore) to restore any required 
 kicking off a build using a current version of msbuild.  The Csproj and SLN files are all designed to use the new
 format for Msbuild which is simplified and really directly replaces what prebuild provided.
 
-Load the generated OpenSim.sln into Visual Studio .NET and build the solution.
+Load the generated OpenSim.sln into Visual Studio and build the solution.
+
+copy file bin\System.Drawing.Common.dll.win to bin\System.Drawing.Common.dll
 
 Configure, see below
 

@@ -90,7 +90,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
         private float m_targetHoverHeight;
         private float m_buoyancy;                //KF: m_buoyancy should be set by llSetBuoyancy() for non-vehicle.
 
-        private int m_body_autodisable_frames;
+        private readonly int m_body_autodisable_frames;
         public int m_bodydisablecontrol = 0;
         private float m_gravmod = 1.0f;
 
@@ -117,7 +117,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
         public bool m_disabled;
 
         private IMesh m_mesh;
-        private readonly object m_meshlock = new object();
+        private readonly object m_meshlock = new();
         private PrimitiveBaseShape m_pbs;
 
         private UUID? m_assetID;
@@ -134,7 +134,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
 
         private PhysicsActor _parent;
 
-        private List<OdePrim> childrenPrim = new List<OdePrim>();
+        private readonly List<OdePrim> childrenPrim = new();
 
         public float m_collisionscore;
         private int m_colliderfilter = 0;
@@ -478,8 +478,10 @@ namespace OpenSim.Region.PhysicsModule.ubOde
                     return _parent.GetInertiaData();
                 else
                 {
-                    inertia = new PhysicsInertiaData();
-                    inertia.TotalMass = -1;
+                    inertia = new PhysicsInertiaData
+                    {
+                        TotalMass = -1
+                    };
                     return inertia;
                 }
             }
@@ -489,16 +491,16 @@ namespace OpenSim.Region.PhysicsModule.ubOde
             // double buffering
             if(m_fakeInertiaOverride != null)
             { 
-                UBOdeNative.Mass objdmass = new UBOdeNative.Mass();
+                UBOdeNative.Mass objdmass = new();
                 objdmass.I.M00 = m_fakeInertiaOverride.Inertia.X;
                 objdmass.I.M11 = m_fakeInertiaOverride.Inertia.Y;
                 objdmass.I.M22 = m_fakeInertiaOverride.Inertia.Z;
 
                 objdmass.mass = m_fakeInertiaOverride.TotalMass;
                     
-                if(Math.Abs(m_fakeInertiaOverride.InertiaRotation.W) < 0.999)
+                if(MathF.Abs(m_fakeInertiaOverride.InertiaRotation.W) < 0.999)
                 {
-                    UBOdeNative.Matrix3 inertiarotmat = new UBOdeNative.Matrix3();
+                    UBOdeNative.Matrix3 inertiarotmat = new();
                     UBOdeNative.RfromQ(ref inertiarotmat, ref m_fakeInertiaOverride.InertiaRotation);
                     UBOdeNative.MassRotate(ref objdmass, ref inertiarotmat);
                 }
@@ -525,7 +527,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
             }
 
             UBOdeNative.Vector3 dtmp;
-            UBOdeNative.Mass m = new UBOdeNative.Mass();
+            UBOdeNative.Mass m = new();
             lock(m_parentScene.OdeLock)
             {
                 UBOdeNative.AllocateODEDataForThread(0);
@@ -533,10 +535,10 @@ namespace OpenSim.Region.PhysicsModule.ubOde
                 UBOdeNative.BodyGetMass(Body, out m);
             }
 
-            Vector3 cm = new Vector3(-dtmp.X, -dtmp.Y, -dtmp.Z);
+            Vector3 cm = new(-dtmp.X, -dtmp.Y, -dtmp.Z);
             inertia.CenterOfMass = cm;
-            inertia.Inertia = new Vector3(m.I.M00, m.I.M11, m.I.M22);
-            inertia.InertiaRotation = new Vector4(m.I.M01, m.I.M02 , m.I.M12, 0);
+            inertia.Inertia = new(m.I.M00, m.I.M11, m.I.M22);
+            inertia.InertiaRotation = new(m.I.M01, m.I.M02 , m.I.M12, 0);
 
             return inertia;
         }
@@ -576,7 +578,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
                     {
                         Vector3 Ptot = UBOdeNative.GeomGetPositionOMV(m_prim_geom);
                         Quaternion q = UBOdeNative.GeomGetQuaternionOMV(m_prim_geom);
-                        Ptot = Ptot + m_OBBOffset * q;
+                        Ptot += m_OBBOffset * q;
                         return Ptot;
                     /*
                         float tmass = _mass;
@@ -771,14 +773,6 @@ namespace OpenSim.Region.PhysicsModule.ubOde
             }
         }
 
-        public override bool FloatOnWater
-        {
-            set
-            {
-                //AddChange(changes.CollidesWater, value);
-            }
-        }
-
         public override Vector3 PIDTarget
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -901,36 +895,44 @@ namespace OpenSim.Region.PhysicsModule.ubOde
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void VehicleFloatParam(int param, float value)
         {
-            strVehicleFloatParam fp = new strVehicleFloatParam();
-            fp.param = param;
-            fp.value = value;
+            strVehicleFloatParam fp = new()
+            {
+                param = param,
+                value = value
+            };
             AddChange(changes.VehicleFloatParam, fp);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void VehicleVectorParam(int param, Vector3 value)
         {
-            strVehicleVectorParam fp = new strVehicleVectorParam();
-            fp.param = param;
-            fp.value = value;
+            strVehicleVectorParam fp = new()
+            {
+                param = param,
+                value = value
+            };
             AddChange(changes.VehicleVectorParam, fp);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void VehicleRotationParam(int param, Quaternion value)
         {
-            strVehicleQuatParam fp = new strVehicleQuatParam();
-            fp.param = param;
-            fp.value = value;
+            strVehicleQuatParam fp = new()
+            {
+                param = param,
+                value = value
+            };
             AddChange(changes.VehicleRotationParam, fp);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void VehicleFlags(int param, bool value)
         {
-            strVehicleBoolParam bp = new strVehicleBoolParam();
-            bp.param = param;
-            bp.value = value;
+            strVehicleBoolParam bp = new()
+            {
+                param = param,
+                value = value
+            };
             AddChange(changes.VehicleFlags, bp);
         }
 
@@ -1027,15 +1029,8 @@ namespace OpenSim.Region.PhysicsModule.ubOde
                 UBOdeNative.AllocateODEDataForThread(0);
                 if(Body != IntPtr.Zero)
                 {
-                    UBOdeNative.Vector3 dtmp = UBOdeNative.BodyGetAngularVel(Body);
-                    m_rotationalVelocity.X = dtmp.X;
-                    m_rotationalVelocity.Y = dtmp.Y;
-                    m_rotationalVelocity.Z = dtmp.Z;
-
-                    dtmp = UBOdeNative.BodyGetLinearVel(Body);
-                    _velocity.X = dtmp.X;
-                    _velocity.Y = dtmp.Y;
-                    _velocity.Z = dtmp.Z;
+                    m_rotationalVelocity = UBOdeNative.BodyGetAngularVelOMV(Body);
+                    _velocity = UBOdeNative.BodyGetLinearVelOMV(Body);
 
                     UBOdeNative.BodySetLinearVel(Body, 0, 0, 0); // stop it
                     UBOdeNative.BodySetAngularVel(Body, 0, 0, 0);
@@ -1148,10 +1143,8 @@ namespace OpenSim.Region.PhysicsModule.ubOde
         {
             m_eventsubscription = ms;
             m_cureventsubscription = 0;
-            if (CollisionEvents == null)
-                CollisionEvents = new CollisionEventUpdate();
-            if (CollisionVDTCEvents == null)
-                CollisionVDTCEvents = new CollisionEventUpdate();
+            CollisionEvents ??= new CollisionEventUpdate();
+            CollisionVDTCEvents ??= new CollisionEventUpdate();
             SentEmptyCollisionsEvent = false;
         }
 
@@ -1175,8 +1168,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void AddCollisionEvent(uint CollidedWith, ContactPoint contact)
         {
-            if (CollisionEvents == null)
-                CollisionEvents = new CollisionEventUpdate();
+            CollisionEvents ??= new CollisionEventUpdate();
 
             CollisionEvents.AddCollider(CollidedWith, contact);
             m_parentScene.AddCollisionEventReporting(this);
@@ -1185,8 +1177,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void AddVDTCCollisionEvent(uint CollidedWith, ContactPoint contact)
         {
-            if (CollisionVDTCEvents == null)
-                CollisionVDTCEvents = new CollisionEventUpdate();
+            CollisionVDTCEvents ??= new CollisionEventUpdate();
 
             CollisionVDTCEvents.AddCollider(CollidedWith, contact);
             m_parentScene.AddCollisionEventReporting(this);
@@ -1324,7 +1315,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
 
             m_targetSpace = IntPtr.Zero;
 
-            m_isphysical = pos.Z < Constants.MinSimulationHeight || pos.Z > Constants.MaxSimulationHeight ? false : pisPhysical;
+            m_isphysical = pos.Z >= Constants.MinSimulationHeight && pos.Z <= Constants.MaxSimulationHeight && pisPhysical;
             m_fakeisphysical = m_isphysical;
 
             m_isVolumeDetect = false;
@@ -1652,17 +1643,12 @@ namespace OpenSim.Region.PhysicsModule.ubOde
 
         private bool GetMeshGeom()
         {
-            IntPtr vertices, indices;
-            int vertexCount, indexCount;
-            int vertexStride, triStride;
-
             IMesh mesh = m_mesh;
-
-            if (mesh == null)
+            if (mesh is null)
                 return false;
 
-            mesh.getVertexListAsPtrToFloatArray(out vertices, out vertexStride, out vertexCount);
-            mesh.getIndexListAsPtrToIntArray(out indices, out triStride, out indexCount);
+            mesh.getVertexListAsPtrToFloatArray(out IntPtr vertices, out int vertexStride, out int vertexCount);
+            mesh.getIndexListAsPtrToIntArray(out IntPtr indices, out int triStride, out int indexCount);
 
             if (vertexCount == 0 || indexCount == 0)
             {
@@ -1756,7 +1742,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
 
             if (!hasMesh)
             {
-                IntPtr geo = IntPtr.Zero;
+                IntPtr geo;
 
                 if (m_pbs.ProfileShape == ProfileShape.HalfCircle && m_pbs.PathCurve == (byte)Extrusion.Curve1
                     && m_size.X == m_size.Y && m_size.Y == m_size.Z)
@@ -1911,11 +1897,11 @@ namespace OpenSim.Region.PhysicsModule.ubOde
             Body = UBOdeNative.BodyCreate(m_parentScene.world);
 
             // set the body rotation
-            UBOdeNative.Matrix3 mymat = new UBOdeNative.Matrix3();
+            UBOdeNative.Matrix3 mymat = new();
             UBOdeNative.RfromQ(ref mymat, ref m_orientation);
             UBOdeNative.BodySetRotation(Body, ref mymat);
 
-            UBOdeNative.Mass objdmass = new UBOdeNative.Mass { };
+            UBOdeNative.Mass objdmass = new();
 
 
             if (noInertiaOverride)
@@ -1927,8 +1913,8 @@ namespace OpenSim.Region.PhysicsModule.ubOde
             // recompute full object inertia if needed
             if (childrenPrim.Count > 0)
             {
-                UBOdeNative.Matrix3 mat = new UBOdeNative.Matrix3();
-                UBOdeNative.Mass tmpdmass = new UBOdeNative.Mass { };
+                UBOdeNative.Matrix3 mat = new();
+                UBOdeNative.Mass tmpdmass;
                 Vector3 rcm;
 
                 rcm = m_position;
@@ -2017,9 +2003,9 @@ namespace OpenSim.Region.PhysicsModule.ubOde
 
                 objdmass.mass = m_InertiaOverride.TotalMass;
 
-                if(Math.Abs(m_InertiaOverride.InertiaRotation.W) < 0.999)
+                if(MathF.Abs(m_InertiaOverride.InertiaRotation.W) < 0.999f)
                 {
-                    UBOdeNative.Matrix3 inertiarotmat = new UBOdeNative.Matrix3();
+                    UBOdeNative.Matrix3 inertiarotmat = new();
                     UBOdeNative.RfromQ(ref inertiarotmat, ref m_InertiaOverride.InertiaRotation);
                     UBOdeNative.MassRotate(ref objdmass, ref inertiarotmat);
                 }
@@ -2233,14 +2219,8 @@ namespace OpenSim.Region.PhysicsModule.ubOde
 
         private void FixInertia(Vector3 NewPos,Quaternion newrot)
         {
-            UBOdeNative.Matrix3 mat = new UBOdeNative.Matrix3();
-            UBOdeNative.Quaternion quat = new UBOdeNative.Quaternion();
-
-            UBOdeNative.Mass tmpdmass = new UBOdeNative.Mass { };
-            UBOdeNative.Mass objdmass = new UBOdeNative.Mass { };
-
-            UBOdeNative.BodyGetMass(Body, out tmpdmass);
-            objdmass = tmpdmass;
+            UBOdeNative.BodyGetMass(Body, out UBOdeNative.Mass tmpdmass);
+            UBOdeNative.Mass objdmass = tmpdmass;
 
             UBOdeNative.Vector3 dobjpos;
             UBOdeNative.Vector3 thispos;
@@ -2252,7 +2232,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
             tmpdmass = primdMass;
 
             // transform to object frame
-            mat = UBOdeNative.GeomGetOffsetRotation(m_prim_geom);
+            UBOdeNative.Matrix3 mat = UBOdeNative.GeomGetOffsetRotation(m_prim_geom);
             UBOdeNative.MassRotate(ref tmpdmass, ref mat);
 
             thispos = UBOdeNative.GeomGetOffsetPosition(m_prim_geom);
@@ -2271,10 +2251,13 @@ namespace OpenSim.Region.PhysicsModule.ubOde
             m_position = NewPos;
             UBOdeNative.GeomSetOffsetWorldPosition(m_prim_geom, NewPos.X, NewPos.Y, NewPos.Z);
             m_orientation = newrot;
-            quat.X = newrot.X;
-            quat.Y = newrot.Y;
-            quat.Z = newrot.Z;
-            quat.W = newrot.W;
+            UBOdeNative.Quaternion quat = new()
+            {
+                X = newrot.X,
+                Y = newrot.Y,
+                Z = newrot.Z,
+                W = newrot.W
+            };
             UBOdeNative.GeomSetOffsetWorldQuaternion(m_prim_geom, ref quat);
 
             mat = UBOdeNative.GeomGetOffsetRotation(m_prim_geom);
@@ -2309,15 +2292,14 @@ namespace OpenSim.Region.PhysicsModule.ubOde
 
         private void FixInertia(Vector3 NewPos)
         {
-            UBOdeNative.Matrix3 primmat = new UBOdeNative.Matrix3();
-            UBOdeNative.Mass tmpdmass = new UBOdeNative.Mass { };
-            UBOdeNative.Mass objdmass = new UBOdeNative.Mass { };
-            UBOdeNative.Mass primmass = new UBOdeNative.Mass { };
+            UBOdeNative.Matrix3 primmat;
+            UBOdeNative.Mass tmpdmass;
+            UBOdeNative.Mass primmass;
 
             UBOdeNative.Vector3 dobjpos;
             UBOdeNative.Vector3 thispos;
 
-            UBOdeNative.BodyGetMass(Body, out objdmass);
+            UBOdeNative.BodyGetMass(Body, out UBOdeNative.Mass objdmass);
 
             // get prim own inertia in its local frame
             primmass = primdMass;
@@ -2373,18 +2355,16 @@ namespace OpenSim.Region.PhysicsModule.ubOde
 
         private void FixInertia(Quaternion newrot)
         {
-            UBOdeNative.Matrix3 mat = new UBOdeNative.Matrix3();
-            UBOdeNative.Quaternion quat = new UBOdeNative.Quaternion();
+            UBOdeNative.Matrix3 mat;
+            UBOdeNative.Quaternion quat = new();
 
-            UBOdeNative.Mass tmpdmass = new UBOdeNative.Mass { };
-            UBOdeNative.Mass objdmass = new UBOdeNative.Mass { };
             UBOdeNative.Vector3 dobjpos;
             UBOdeNative.Vector3 thispos;
 
-            UBOdeNative.BodyGetMass(Body, out objdmass);
+            UBOdeNative.BodyGetMass(Body, out UBOdeNative.Mass objdmass);
 
             // get prim own inertia in its local frame
-            tmpdmass = primdMass;
+            UBOdeNative.Mass tmpdmass = primdMass;
             mat = UBOdeNative.GeomGetOffsetRotation(m_prim_geom);
             UBOdeNative.MassRotate(ref tmpdmass, ref mat);
             // transform to object frame
@@ -2957,7 +2937,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
                 {
                     if (newOri.NotEqual(m_orientation))
                     {
-                        UBOdeNative.Quaternion myrot = new UBOdeNative.Quaternion()
+                        UBOdeNative.Quaternion myrot = new()
                             {
                                 X = newOri.X,
                                 Y = newOri.Y,
@@ -2987,7 +2967,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
                 {
                     if (newOri.NotEqual(m_orientation))
                     {
-                        UBOdeNative.Quaternion myrot = new UBOdeNative.Quaternion()
+                        UBOdeNative.Quaternion myrot = new()
                             {
                                 X = newOri.X,
                                 Y = newOri.Y,
@@ -3020,7 +3000,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
                 {
                     if (newOri.NotEqual(m_orientation))
                     {
-                        UBOdeNative.Quaternion myrot = new UBOdeNative.Quaternion()
+                        UBOdeNative.Quaternion myrot = new()
                             {
                                 X = newOri.X,
                                 Y = newOri.Y,
@@ -3054,7 +3034,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
                 {
                     if (newOri.NotEqual(m_orientation))
                     {
-                        UBOdeNative.Quaternion myrot = new UBOdeNative.Quaternion()
+                        UBOdeNative.Quaternion myrot = new()
                         {
                             X = newOri.X,
                             Y = newOri.Y,
@@ -3157,11 +3137,13 @@ namespace OpenSim.Region.PhysicsModule.ubOde
             if (m_prim_geom != IntPtr.Zero)
             {
                 UBOdeNative.GeomSetPosition(m_prim_geom, m_position.X, m_position.Y, m_position.Z);
-                UBOdeNative.Quaternion myrot = new UBOdeNative.Quaternion();
-                myrot.X = m_orientation.X;
-                myrot.Y = m_orientation.Y;
-                myrot.Z = m_orientation.Z;
-                myrot.W = m_orientation.W;
+                UBOdeNative.Quaternion myrot = new()
+                {
+                    X = m_orientation.X,
+                    Y = m_orientation.Y,
+                    Z = m_orientation.Z,
+                    W = m_orientation.W
+                };
                 UBOdeNative.GeomSetQuaternion(m_prim_geom, ref myrot);
             }
 
@@ -3234,11 +3216,13 @@ namespace OpenSim.Region.PhysicsModule.ubOde
             if (m_prim_geom != IntPtr.Zero)
             {
                 UBOdeNative.GeomSetPosition(m_prim_geom, m_position.X, m_position.Y, m_position.Z);
-                UBOdeNative.Quaternion myrot = new UBOdeNative.Quaternion();
-                myrot.X = m_orientation.X;
-                myrot.Y = m_orientation.Y;
-                myrot.Z = m_orientation.Z;
-                myrot.W = m_orientation.W;
+                UBOdeNative.Quaternion myrot = new()
+                {
+                    X = m_orientation.X,
+                    Y = m_orientation.Y,
+                    Z = m_orientation.Z,
+                    W = m_orientation.W
+                };
                 UBOdeNative.GeomSetQuaternion(m_prim_geom, ref myrot);
             }
 
@@ -3367,7 +3351,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
             float len = newVel.LengthSquared();
             if (len > 100000.0f) // limit to 100m/s
             {
-                len = 100.0f / (float)Math.Sqrt(len);
+                len = 100.0f / MathF.Sqrt(len);
                 newVel *= len;
             }
 
@@ -3395,7 +3379,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
             float len = newAngVel.LengthSquared();
             if (len > m_parentScene.maxAngVelocitySQ)
             {
-                len = m_parentScene.maximumAngularVelocity / (float)Math.Sqrt(len);
+                len = m_parentScene.maximumAngularVelocity / MathF.Sqrt(len);
                 newAngVel *= len;
             }
 
@@ -3456,8 +3440,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void changeSetVehicle(VehicleData vdata)
         {
-            if (m_vehicle == null)
-                m_vehicle = new ODEDynamics(this);
+            m_vehicle ??= new ODEDynamics(this);
             m_vehicle.DoSetVehicle(vdata);
         }
 
@@ -3471,8 +3454,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
             }
             else
             {
-                if (m_vehicle == null)
-                    m_vehicle = new ODEDynamics(this);
+                m_vehicle ??= new ODEDynamics(this);
 
                 m_vehicle.ProcessTypeChange((Vehicle)value);
             }
@@ -3742,7 +3724,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
                         fz = (m_targetHoverHeight - lpos.Z);
 
                         //  if error is zero, use position control; otherwise, velocity control
-                        if (Math.Abs(fz) < 0.01f)
+                        if (MathF.Abs(fz) < 0.01f)
                         {
                             UBOdeNative.BodySetPosition(Body, lpos.X, lpos.Y, m_targetHoverHeight);
                             UBOdeNative.BodySetLinearVel(Body, vel.X, vel.Y, 0);
@@ -3911,13 +3893,13 @@ namespace OpenSim.Region.PhysicsModule.ubOde
                             angerror = 0.0005f;
                         }
 
-                        if (
-                            (Math.Abs(m_position.X - lpos.X) < poserror)
-                            && (Math.Abs(m_position.Y - lpos.Y) < poserror)
-                            && (Math.Abs(m_position.Z - lpos.Z) < poserror)
-                            && (Math.Abs(m_orientation.X - ori.X) < angerror)
-                            && (Math.Abs(m_orientation.Y - ori.Y) < angerror)
-                            && (Math.Abs(m_orientation.Z - ori.Z) < angerror)  // ignore W
+                        if  (
+                            (MathF.Abs(m_position.X - lpos.X) < poserror)
+                            && (MathF.Abs(m_position.Y - lpos.Y) < poserror)
+                            && (MathF.Abs(m_position.Z - lpos.Z) < poserror)
+                            && (MathF.Abs(m_orientation.X - ori.X) < angerror)
+                            && (MathF.Abs(m_orientation.Y - ori.Y) < angerror)
+                            && (MathF.Abs(m_orientation.Z - ori.Z) < angerror)  // ignore W
                             )
                             _zeroFlag = true;
                         else
@@ -3943,14 +3925,11 @@ namespace OpenSim.Region.PhysicsModule.ubOde
                     {
                         Vector3 vel = UBOdeNative.BodyGetLinearVelOMV(Body);
                         m_acceleration = _velocity;
-
-                        if ((Math.Abs(vel.X) < 0.005f) &&
-                            (Math.Abs(vel.Y) < 0.005f) &&
-                            (Math.Abs(vel.Z) < 0.005f))
+                        if (vel.ApproxZero(0.005f))
                         {
                             _velocity = Vector3.Zero;
                             float t = -m_sceneInverseTimeStep;
-                            m_acceleration = m_acceleration * t;
+                            m_acceleration *= t;
                         }
                         else
                         {
@@ -3958,18 +3937,13 @@ namespace OpenSim.Region.PhysicsModule.ubOde
                             m_acceleration = (_velocity - m_acceleration) * m_sceneInverseTimeStep;
                         }
 
-                        if ((Math.Abs(m_acceleration.X) < 0.01f) &&
-                            (Math.Abs(m_acceleration.Y) < 0.01f) &&
-                            (Math.Abs(m_acceleration.Z) < 0.01f))
+                        if (m_acceleration.ApproxZero(0.01f))
                         {
                             m_acceleration = Vector3.Zero;
                         }
 
                         vel = UBOdeNative.BodyGetAngularVelOMV(Body);
-                        if ((Math.Abs(vel.X) < 0.0001) &&
-                            (Math.Abs(vel.Y) < 0.0001) &&
-                            (Math.Abs(vel.Z) < 0.0001)
-                            )
+                        if (vel.ApproxZero(0.0001f))
                         {
                             m_rotationalVelocity = Vector3.Zero;
                         }
@@ -4016,7 +3990,7 @@ namespace OpenSim.Region.PhysicsModule.ubOde
             float smass = part.mass;
             theobj.mass -= smass;
 
-            smass *= 1.0f / (theobj.mass); ;
+            smass *= 1.0f / (theobj.mass);
 
             theobj.c.X -= part.c.X * smass;
             theobj.c.Y -= part.c.Y * smass;

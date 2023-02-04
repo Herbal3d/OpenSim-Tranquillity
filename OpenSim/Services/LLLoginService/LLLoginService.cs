@@ -927,7 +927,7 @@ namespace OpenSim.Services.LLLoginService
                 if(simConnector == null)
                     return null;
 
-                circuitCode = (uint)Util.RandomClass.Next();
+                circuitCode = (uint)Random.Shared.Next();
                 aCircuit = MakeAgent(destination, account, avatar, session, secureSession, circuitCode, position,
                     clientIP.Address.ToString(), viewer, channel, mac, id0);
 
@@ -964,7 +964,7 @@ namespace OpenSim.Services.LLLoginService
                     gatekeeper.HttpPort = (uint)port;
                     gatekeeper.ServerURI = m_GatekeeperURL;
                 }
-                circuitCode = (uint)Util.RandomClass.Next(); ;
+                circuitCode = (uint)Random.Shared.Next();
                 aCircuit = MakeAgent(destination, account, avatar, session, secureSession, circuitCode, position,
                         clientIP.Address.ToString(), viewer, channel, mac, id0);
 
