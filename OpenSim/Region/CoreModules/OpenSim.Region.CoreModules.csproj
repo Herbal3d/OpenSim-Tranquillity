@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <AssemblyTitle>OpenSim.Region.CoreModules</AssemblyTitle>
     <Product>OpenSim.Region.CoreModules.Properties</Product>
     <Description>Core modules for OpenSim</Description>
@@ -103,10 +103,10 @@
   <ItemGroup>
     <PackageReference Include="Ionic.Zlib.Core" Version="1.0.0" />
     <PackageReference Include="log4net" Version="2.0.15" />
-    <PackageReference Include="MailKit" Version="3.4.2" />
-    <PackageReference Include="MimeKit" Version="3.4.2" />
+    <PackageReference Include="MailKit" Version="3.5.0" />
+    <PackageReference Include="MimeKit" Version="3.5.0" />
     <PackageReference Include="Mono.Addins" Version="1.4.1" />
-    <PackageReference Include="MySql.Data" Version="8.0.31" />
+    <PackageReference Include="MySql.Data" Version="8.0.32" />
     <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
   </ItemGroup>
 </Project>

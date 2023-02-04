@@ -77,7 +77,7 @@ namespace OpenSim.Data.SQLite
         /// <param name="dbconnect">connect string</param>
         override public void Initialise(string dbconnect)
         {
-            DllmapConfigHelper.RegisterAssembly(typeof(SqliteConnection).Assembly);
+            DllmapConfigHelper.RegisterAssembly(typeof(SQLiteConnection).Assembly);
 
             if (dbconnect.Length == 0)
             {

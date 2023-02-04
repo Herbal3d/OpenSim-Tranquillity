@@ -515,6 +515,11 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
             return m_LSL_Functions.llGetHTTPHeader(request_id, header);
         }
 
+        public LSL_String llGetInventoryAcquireTime(string item)
+        {
+            return m_LSL_Functions.llGetInventoryAcquireTime(item);
+        }
+
         public LSL_Key llGetInventoryCreator(string item)
         {
             return m_LSL_Functions.llGetInventoryCreator(item);
@@ -2203,6 +2208,11 @@ namespace OpenSim.Region.ScriptEngine.Shared.ScriptBase
         public LSL_Integer llHash(LSL_String s)
         {
             return m_LSL_Functions.llHash(s);
+        }
+
+        public LSL_String llReplaceSubString(LSL_String src, LSL_String pattern, LSL_String replacement, int count)
+        {
+            return m_LSL_Functions.llReplaceSubString(src, pattern, replacement, count);
         }
     }
 }

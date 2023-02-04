@@ -65,7 +65,7 @@ namespace OpenSim.Data.SQLite
 
         public void Initialise(string connectionString)
         {
-            DllmapConfigHelper.RegisterAssembly(typeof(SqliteConnection).Assembly);
+            DllmapConfigHelper.RegisterAssembly(typeof(SQLiteConnection).Assembly);
 
             m_connectionString = connectionString;
 

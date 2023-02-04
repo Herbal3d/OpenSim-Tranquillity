@@ -49,7 +49,7 @@ namespace OpenSim.Data.SQLite
 
         public SQLiteXInventoryData(string conn, string realm)
         {
-            DllmapConfigHelper.RegisterAssembly(typeof(SqliteConnection).Assembly);
+            DllmapConfigHelper.RegisterAssembly(typeof(SQLiteConnection).Assembly);
 
             m_Folders = new SqliteFolderHandler(
                     conn, "inventoryfolders", "XInventoryStore");

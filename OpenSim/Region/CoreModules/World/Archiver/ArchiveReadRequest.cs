@@ -340,7 +340,7 @@ namespace OpenSim.Region.CoreModules.World.Archiver
                     continue;
                 }
                 string extension = filename[indx..];
-                if (ArchiveConstants.EXTENSION_TO_ASSET_TYPE.ContainsKey(extension))
+                if (ArchiveConstants.EXTENSION_TO_ASSET_TYPE.TryGetValue(extension, out sbyte ext))
                 {
                     string id = filename.Remove(indx);
                     if (UUID.TryParse(id, out UUID uuid))

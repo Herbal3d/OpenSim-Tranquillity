@@ -4142,7 +4142,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             {
                 ScenePresence presence = World.GetScenePresence(m_item.PermsGranter);
 
-                if (presence != null)
+                if (presence is not null)
                 {
                     // Do NOT try to parse UUID, animations cannot be triggered by ID
                     UUID animID = ScriptUtils.GetAssetIdFromItemName(m_host, anim, (int)AssetType.Animation);
@@ -4164,7 +4164,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             {
                 ScenePresence presence = World.GetScenePresence(m_item.PermsGranter);
 
-                if (presence != null)
+                if (presence is not null)
                 {
                     UUID animID = ScriptUtils.GetAssetIdFromKeyOrItemName(m_host, anim);
                     if (animID.IsNotZero())
@@ -4183,7 +4183,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             UUID animID = ScriptUtils.GetAssetIdFromItemName(m_host, anim, (int)AssetType.Animation);
             if (animID.IsZero())
                 animID = DefaultAvatarAnimations.GetDefaultAnimation(anim);
-            if (!animID.IsZero())
+            if (animID.IsNotZero())
                 m_host.AddAnimation(animID, anim);
         }
 
@@ -4194,9 +4194,9 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
         public LSL_List llGetObjectAnimationNames()
         {
-            LSL_List ret = new LSL_List();
+            LSL_List ret = new();
 
-            if(m_host.AnimationsNames == null || m_host.AnimationsNames.Count == 0)
+            if(m_host.AnimationsNames is null || m_host.AnimationsNames.Count == 0)
                 return ret;
 
             foreach (string name in m_host.AnimationsNames.Values)
@@ -4238,7 +4238,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if (!UUID.TryParse(agent, out UUID agentID) || agentID.IsZero())
                 return;
 
-            if (agentID == UUID.Zero || perm == 0) // Releasing permissions
+            if (agentID.IsZero() || perm == 0) // Releasing permissions
             {
                 llReleaseControls();
 
@@ -4248,7 +4248,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 m_ScriptEngine.PostScriptEvent(m_item.ItemID, new EventParams(
                         "run_time_permissions", new Object[] {
                         new LSL_Integer(0) },
-                        new DetectParams[0]));
+                        Array.Empty<DetectParams>()));
 
                 return;
             }
@@ -12730,8 +12730,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 return;
 
             TaskInventoryItem item = m_host.Inventory.GetInventoryItem(itemName);
-
-            if (item != null)
+            if (item is not null)
             {
                 if (mask != ScriptBaseClass.MASK_BASE)
                 {
@@ -12778,15 +12777,27 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         {
 
             TaskInventoryItem item = m_host.Inventory.GetInventoryItem(itemName);
-
-            if (item == null)
+            if (item is null)
             {
-                Error("llGetInventoryCreator", "Can't find item '" + item + "'");
-
+                Error("llGetInventoryCreator", $"Can't find item '{itemName}'");
                 return String.Empty;
             }
 
             return item.CreatorID.ToString();
+        }
+
+        public LSL_String llGetInventoryAcquireTime(string itemName)
+        {
+
+            TaskInventoryItem item = m_host.Inventory.GetInventoryItem(itemName);
+            if (item is null)
+            {
+                Error("llGetInventoryAcquireTime", $"Can't find item '{itemName}'");
+                return String.Empty;
+            }
+
+            DateTime date = Util.ToDateTime(item.CreationDate);
+            return date.ToString("yyyy-MM-ddTHH:mm:ssZ");
         }
 
         public void llOwnerSay(string msg)
@@ -18656,6 +18667,41 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 hash += c;
             }
             return hash;
+        }
+
+        public LSL_String llReplaceSubString(LSL_String src, LSL_String pattern, LSL_String replacement, int count)
+        {
+            RegexOptions RegexOptions;
+            if (count < 0)
+            {
+                RegexOptions = RegexOptions.CultureInvariant | RegexOptions.RightToLeft;
+                count = -count;
+            }
+            else
+            {
+                RegexOptions = RegexOptions.CultureInvariant;
+                if (count == 0)
+                    count = -1;
+            }
+
+            try
+            {
+                if (string.IsNullOrEmpty(src.m_string))
+                    return src;
+
+                if (string.IsNullOrEmpty(pattern.m_string))
+                    return src;
+
+                Regex rx = new Regex(pattern, RegexOptions, new TimeSpan(500000)); // 50ms)
+                if (replacement == null)
+                    return rx.Replace(src.m_string, string.Empty, count);
+
+                return rx.Replace(src.m_string, replacement.m_string, count);
+            }
+            catch
+            {
+                return src;
+            }
         }
     }
 
