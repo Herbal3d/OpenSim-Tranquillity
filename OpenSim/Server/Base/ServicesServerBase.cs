@@ -113,10 +113,6 @@ namespace OpenSim.Server.Base
                 }
             }
 
-            // Merge OpSys env vars
-            Console.WriteLine("[CONFIG]: Loading environment variables for Config");
-            Util.MergeEnvironmentToConfig(Config);
-
             // Merge the configuration from the command line into the loaded file
             Config.Merge(argvConfig);
 

@@ -7,14 +7,6 @@
     <Product>OpenSim.Server.MoneyServer</Product>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Mono.Security.dll">
-      <HintPath>..\..\..\bin\lib\NET\Mono.Security.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Nini">
-      <HintPath>..\..\..\bin\Nini.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="OpenMetaverse">
       <HintPath>..\..\..\bin\OpenMetaverse.dll</HintPath>
       <Private>False</Private>
@@ -25,9 +17,6 @@
     </Reference>
     <Reference Include="OpenMetaverseTypes">
       <HintPath>..\..\..\bin\OpenMetaverseTypes.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Runtime.Remoting">
       <Private>False</Private>
     </Reference>
     <Reference Include="XMLRPC">
@@ -54,5 +43,6 @@
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.15" />
     <PackageReference Include="Mono.Addins" Version="1.4.1" />
+    <PackageReference Include="nini-core" Version="0.9.2.16" />
   </ItemGroup>
 </Project>

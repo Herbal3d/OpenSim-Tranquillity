@@ -155,7 +155,7 @@ namespace OpenSim.Region.CoreModules.Avatar.UserProfiles
                                 m_profilesCache.AddOrUpdate(props.UserId, uce, PROFILECACHEEXPIRE);
                             }
 
-                            if (IsFriendOnline(req.client.AgentId, req.agent))
+                            if (IsFriendOnline(req.client, req.agent))
                                 flags |= (uint)ProfileFlags.Online;
                             else
                                 flags &= (uint)~ProfileFlags.Online;
@@ -1448,7 +1448,7 @@ namespace OpenSim.Region.CoreModules.Avatar.UserProfiles
                         props = uce.props;
                         uint cflags = uce.flags;
 
-                        if (IsFriendOnline(remoteClient.AgentId, avatarID))
+                        if (IsFriendOnline(remoteClient, avatarID))
                             cflags = (uint)ProfileFlags.Online;
                         else
                             cflags &= (uint)~ProfileFlags.Online;
@@ -1721,27 +1721,6 @@ namespace OpenSim.Region.CoreModules.Avatar.UserProfiles
             return null;
         }
 
-        public virtual bool IsFriendOnline(UUID client, UUID agent)
-        {
-            // if on same region force online
-            ScenePresence p = Scene.GetScenePresence(agent);
-            if (p != null && !p.IsDeleted)
-                return true;
-
-            IFriendsModule friendsModule = Scene.RequestModuleInterface<IFriendsModule>();
-            if (friendsModule != null)
-            {
-                int friendPerms = friendsModule.GetRightsGrantedByFriend(client, agent);
-                if((friendPerms & (int) FriendRights.CanSeeOnline) != 0)
-                {
-                    Services.Interfaces.PresenceInfo[] pi = Scene.PresenceService?.GetAgents(new string[] { agent.ToString() });
-                    return pi != null && pi.Length > 0;
-                }
-            }
-            return false;
-         }
-        #endregion Util
-
         public virtual bool IsFriendOnline(IClientAPI client, UUID agent)
         {
             // if on same region force online
@@ -1761,7 +1740,7 @@ namespace OpenSim.Region.CoreModules.Avatar.UserProfiles
             return false;
          }
    
-    #endregion Util
+    #endregion Utils
 
     #region Web Util
         /// <summary>

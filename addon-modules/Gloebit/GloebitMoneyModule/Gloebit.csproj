@@ -1,15 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net60</TargetFramework>
   </PropertyGroup>
   <Target Name="CopyFiles">
     <Copy SourceFiles="@(FilesToCopy_0000)" DestinationFolder="../../../bin/" />
   </Target>
   <ItemGroup>
-    <Reference Include="Nini">
-      <HintPath>..\..\..\bin\Nini.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Npgsql">
       <HintPath>..\..\..\bin\Npgsql.dll</HintPath>
       <Private>False</Private>
@@ -65,5 +61,6 @@
     <PackageReference Include="log4net" Version="2.0.15" />
     <PackageReference Include="Mono.Addins" Version="1.4.1" />
     <PackageReference Include="MySql.Data" Version="8.0.32" />
+    <PackageReference Include="nini-core" Version="0.9.2.16" />
   </ItemGroup>
 </Project>

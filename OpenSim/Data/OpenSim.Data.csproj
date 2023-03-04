@@ -105,15 +105,6 @@
     <Compile Remove="SQLite\SQLiteUserProfilesData.cs" />
     <Compile Remove="SQLite\SQLiteUtils.cs" />
     <Compile Remove="SQLite\SQLiteXInventoryData.cs" />
-    <Compile Remove="Tests\AssetTests.cs" />
-    <Compile Remove="Tests\BasicDataServiceTest.cs" />
-    <Compile Remove="Tests\DataTestUtil.cs" />
-    <Compile Remove="Tests\DefaultTestConns.cs" />
-    <Compile Remove="Tests\EstateTests.cs" />
-    <Compile Remove="Tests\InventoryTests.cs" />
-    <Compile Remove="Tests\PropertyCompareConstraint.cs" />
-    <Compile Remove="Tests\PropertyScrambler.cs" />
-    <Compile Remove="Tests\RegionTests.cs" />
     <Compile Remove="MySQL\Properties\AssemblyInfo.cs" />
     <Compile Remove="Null\Properties\AssemblyInfo.cs" />
     <Compile Remove="PGSQL\Properties\AssemblyInfo.cs" />

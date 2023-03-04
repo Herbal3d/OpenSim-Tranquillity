@@ -1,6 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net60</TargetFramework>
     <OutputType>Exe</OutputType>
     <AssemblyTitle>OpenSim</AssemblyTitle>
     <Company>http://opensimulator.org</Company>
@@ -11,10 +11,6 @@
   <ItemGroup>
     <Reference Include="NDesk.Options">
       <HintPath>..\..\..\bin\NDesk.Options.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Nini">
-      <HintPath>..\..\..\bin\Nini.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="OpenMetaverse">
@@ -49,11 +45,20 @@
     <ProjectReference Include="..\..\Services\Interfaces\OpenSim.Services.Interfaces.csproj" />
     <ProjectReference Include="..\..\Services\UserAccountService\OpenSim.Services.UserAccountService.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="$(SolutionDir)\bin\**">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+    <ItemGroup>
+	    <Content Include="$(SolutionDir)\bin\**">
+		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	    </Content>
+    </ItemGroup>
+    <ItemGroup>
+      <Content Remove="D:\Documents\Projects\UtopiaSkye\OpenSim-NGC\OpenSim-Develop-Net6\bin\Nini.dll" />
+      <Content Remove="D:\Documents\Projects\UtopiaSkye\OpenSim-NGC\OpenSim-Develop-Net6\bin\System.Configuration.ConfigurationManager.dll" />
+      <Content Remove="D:\Documents\Projects\UtopiaSkye\OpenSim-NGC\OpenSim-Develop-Net6\bin\System.Drawing.Common.dll" />
+      <Content Remove="D:\Documents\Projects\UtopiaSkye\OpenSim-NGC\OpenSim-Develop-Net6\bin\System.Drawing.Common.dll.linux" />
+      <Content Remove="D:\Documents\Projects\UtopiaSkye\OpenSim-NGC\OpenSim-Develop-Net6\bin\System.Drawing.Common.dll.win" />
+      <Content Remove="D:\Documents\Projects\UtopiaSkye\OpenSim-NGC\OpenSim-Develop-Net6\bin\System.Runtime.Caching.dll" />
+      <Content Remove="D:\Documents\Projects\UtopiaSkye\OpenSim-NGC\OpenSim-Develop-Net6\bin\System.Security.Permissions.dll" />
+    </ItemGroup>
   <ItemGroup>
 	<Content Include="Resources/OpenSim.addin.xml">
 	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -61,7 +66,13 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.15" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
+	<PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
+	<PackageReference Include="Microsoft.Extensions.Configuration.Ini" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
     <PackageReference Include="Mono.Addins" Version="1.4.1" />
 	<PackageReference Include="Mono.Addins.Setup" Version="1.4.1" />
+	<PackageReference Include="nini-core" Version="0.9.2.16" />
   </ItemGroup>
 </Project>

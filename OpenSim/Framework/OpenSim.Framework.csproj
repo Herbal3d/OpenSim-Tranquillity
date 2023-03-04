@@ -12,10 +12,6 @@
       <HintPath>..\..\bin\LukeSkywalker.IPNetwork.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Nini">
-      <HintPath>..\..\bin\Nini.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="OpenMetaverse">
       <HintPath>..\..\bin\OpenMetaverse.dll</HintPath>
       <Private>False</Private>
@@ -189,8 +185,9 @@
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.15" />
     <PackageReference Include="Mono.Addins" Version="1.4.1" />
-	  <PackageReference Include="Mono.Addins.Setup" Version="1.4.1" />
+	<PackageReference Include="Mono.Addins.Setup" Version="1.4.1" />
     <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
+	<PackageReference Include="nini-core" Version="0.9.2.16" />
   </ItemGroup>
   <ItemGroup>
     <None Update="VersionInfo.tt">

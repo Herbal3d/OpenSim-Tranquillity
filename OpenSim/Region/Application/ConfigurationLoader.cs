@@ -63,6 +63,11 @@ namespace OpenSim
         protected NetworkServersInfo m_networkServersInfo;
 
         /// <summary>
+        /// Path to the main ini Configuration file
+        /// </summary>
+        protected string iniFilePath = "";
+
+        /// <summary>
         /// Loads the region configuration
         /// </summary>
         /// <param name="argvSource">Parameters passed into the process when started</param>
@@ -70,7 +75,7 @@ namespace OpenSim
         /// <param name="networkInfo"></param>
         /// <returns>A configuration that gets passed to modules</returns>
         public OpenSimConfigSource LoadConfigSettings(
-                IConfigSource argvSource, EnvConfigSource envConfigSource, out ConfigSettings configSettings,
+                IConfigSource argvSource, out ConfigSettings configSettings,
                 out NetworkServersInfo networkInfo)
         {
             m_configSettings = configSettings = new ConfigSettings();
@@ -118,23 +123,22 @@ namespace OpenSim
             {
                 if (!sources.Contains(iniFileName))
                     sources.Add(iniFileName);
-                Application.iniFilePath = iniFileName;
+                this.iniFilePath = iniFileName;
             }
             else
             {
-                Application.iniFilePath = Path.GetFullPath(
-                    Path.Combine(Util.configDir(), iniFileName));
+                this.iniFilePath = Path.GetFullPath(Path.Combine(Util.configDir(), iniFileName));
 
-                if (!File.Exists(Application.iniFilePath))
+                if (!File.Exists(this.iniFilePath))
                 {
                     iniFileName = "OpenSim.xml";
-                    Application.iniFilePath = Path.GetFullPath(Path.Combine(Util.configDir(), iniFileName));
+                    this.iniFilePath = Path.GetFullPath(Path.Combine(Util.configDir(), iniFileName));
                 }
 
-                if (File.Exists(Application.iniFilePath))
+                if (File.Exists(this.iniFilePath))
                 {
-                    if (!sources.Contains(Application.iniFilePath))
-                        sources.Add(Application.iniFilePath);
+                    if (!sources.Contains(this.iniFilePath))
+                        sources.Add(this.iniFilePath);
                 }
             }
 
@@ -204,10 +208,6 @@ namespace OpenSim
                 m_log.FatalFormat("[CONFIG]: Configuration exists, but there was an error loading it!");
                 Environment.Exit(1);
             }
-
-            // Merge OpSys env vars
-            m_log.Info("[CONFIG]: Loading environment variables for Config");
-            Util.MergeEnvironmentToConfig(m_config.Source);
 
             // Make sure command line options take precedence
             m_config.Source.Merge(argvSource);
