@@ -1232,38 +1232,33 @@ namespace OpenSim.Region.Framework.Scenes
 
                 if(SceneGridInfo is not null)
                 {
-                    OSD osdtmp;
-                    string tmp;
-                    if (!fm.TryGetOpenSimExtraFeature("GridName", out osdtmp))
+                    if (!fm.OpenSimExtraFeatureContains("GridName"))
                     {
-                        tmp = SceneGridInfo.GridName;
-                        if (!string.IsNullOrEmpty(tmp))
-                            fm.AddOpenSimExtraFeature("GridName", tmp);
+                        if (!string.IsNullOrEmpty(SceneGridInfo.GridName))
+                            fm.AddOpenSimExtraFeature("GridName", SceneGridInfo.GridName);
                     }
 
-                    if (!fm.TryGetOpenSimExtraFeature("GridNick", out osdtmp))
+                    if (!fm.OpenSimExtraFeatureContains("GridNick"))
                     {
-                        tmp = SceneGridInfo.GridNick;
-                        if (!string.IsNullOrEmpty(tmp))
-                            fm.AddOpenSimExtraFeature("GridNick", tmp);
+                        if (!string.IsNullOrEmpty(SceneGridInfo.GridNick))
+                            fm.AddOpenSimExtraFeature("GridNick", SceneGridInfo.GridNick);
                     }
 
-                    if (!fm.TryGetOpenSimExtraFeature("GridURL", out osdtmp))
+                    if (!fm.OpenSimExtraFeatureContains("GridURL"))
                     {
-                        tmp = SceneGridInfo.GridUrl;
-                        fm.AddOpenSimExtraFeature("GridURL", tmp);
+                        fm.AddOpenSimExtraFeature("GridURL", SceneGridInfo.GridUrl);
                     }
 
-                    if (!fm.TryGetOpenSimExtraFeature("GridURLAlias", out osdtmp))
+                    if (!fm.OpenSimExtraFeatureContains("GridURLAlias"))
                     {
                         string[] alias = SceneGridInfo.GridUrlAlias;
                         if(alias is not null && alias.Length > 0)
                         {
                             StringBuilder sb = osStringBuilderCache.Acquire();
                             int i = 0;
-                            for(; i < alias.Length - 1; ++i)
+                            while(i < alias.Length - 1)
                             {
-                                sb.Append(alias[i]);
+                                sb.Append(alias[i++]);
                                 sb.Append(',');
                             }
                             sb.Append(alias[i]);
@@ -1273,25 +1268,22 @@ namespace OpenSim.Region.Framework.Scenes
                             fm.AddOpenSimExtraFeature("GridURLAlias", string.Empty);
                     }
 
-                    if (!fm.TryGetOpenSimExtraFeature("search-server-url", out osdtmp))
+                    if (!fm.OpenSimExtraFeatureContains("search-server-url"))
                     {
-                        tmp = SceneGridInfo.SearchURL;
-                        if (!string.IsNullOrEmpty(tmp))
-                            fm.AddOpenSimExtraFeature("search-server-url", tmp);
+                        if (!string.IsNullOrEmpty(SceneGridInfo.SearchURL))
+                            fm.AddOpenSimExtraFeature("search-server-url", SceneGridInfo.SearchURL);
                     }
 
-                    if (!fm.TryGetOpenSimExtraFeature("destination-guide-url", out osdtmp))
+                    if (!fm.OpenSimExtraFeatureContains("destination-guide-url"))
                     {
-                        tmp = SceneGridInfo.DestinationGuideURL;
-                        if (!string.IsNullOrEmpty(tmp))
-                            fm.AddOpenSimExtraFeature("destination-guide-url", tmp);
+                        if (!string.IsNullOrEmpty(SceneGridInfo.DestinationGuideURL))
+                            fm.AddOpenSimExtraFeature("destination-guide-url", SceneGridInfo.DestinationGuideURL);
                     }
 
-                    if (!fm.TryGetOpenSimExtraFeature("currency-base-uri", out osdtmp))
+                    if (!fm.OpenSimExtraFeatureContains("currency-base-uri"))
                     {
-                        tmp = SceneGridInfo.EconomyURL;
-                        if (!string.IsNullOrEmpty(tmp))
-                            fm.AddOpenSimExtraFeature("currency-base-uri", tmp);
+                        if (!string.IsNullOrEmpty(SceneGridInfo.EconomyURL))
+                            fm.AddOpenSimExtraFeature("currency-base-uri", SceneGridInfo.EconomyURL);
                     }
                 }
             }
@@ -5569,69 +5561,10 @@ Environment.Exit(1);
 
         // Get terrain height at the specified <x,y> location.
         // Presumes the underlying implementation is a heightmap which is a 1m grid.
-        // Finds heightmap grid points before and after the point and
-        //    does a linear approximation of the height at this intermediate point.
+     
         public float GetGroundHeight(float x, float y)
         {
-            int ix;
-            int iy;
-            float dx;
-            float dy;
-
-            // make position fit into array
-            if (x < 0)
-            {
-                ix = 0;
-                dx = 0;
-            }
-            else if (x < Heightmap.Width - 1)
-            {
-                ix = (int)x;
-                dx = x - ix;
-            }
-            else // out world use external height
-            {
-                ix = Heightmap.Width - 2;
-                dx = 0;
-            }
-            if (y < 0)
-            {
-                iy = 0;
-                dy = 0;
-            }
-            else if (y < Heightmap.Height - 1)
-            {
-                iy = (int)y;
-                dy = y - iy;
-            }
-            else
-            {
-                iy = Heightmap.Height - 2;
-                dy = 0;
-            }
-
-            float h1;
-            float h2;
-            float h0 = Heightmap[ix, iy]; // 0,0 vertice
-
-            if (dy > dx)
-            {
-                ++iy;
-                h2 = Heightmap[ix, iy]; // 0,1 vertice
-                h1 = (h2 - h0) * dy; // 0,1 vertice minus 0,0
-                ++ix;
-                h2 = (Heightmap[ix, iy] - h2) * dx; // 1,1 vertice minus 0,1
-            }
-            else
-            {
-                ++ix;
-                h2 = Heightmap[ix, iy]; // vertice 1,0
-                h1 = (h2 - h0) * dx; // 1,0 vertice minus 0,0
-                ++iy;
-                h2 = (Heightmap[ix, iy] - h2) * dy; // 1,1 vertice minus 1,0
-            }
-         
-            return h0 + h1 + h2;
+           return Heightmap.GetHeight(x, y);
         }
 
         private void CheckHeartbeat()
