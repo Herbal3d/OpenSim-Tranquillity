@@ -50,15 +50,6 @@
 		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	    </Content>
     </ItemGroup>
-    <ItemGroup>
-      <Content Remove="D:\Documents\Projects\UtopiaSkye\OpenSim-NGC\OpenSim-Develop-Net6\bin\Nini.dll" />
-      <Content Remove="D:\Documents\Projects\UtopiaSkye\OpenSim-NGC\OpenSim-Develop-Net6\bin\System.Configuration.ConfigurationManager.dll" />
-      <Content Remove="D:\Documents\Projects\UtopiaSkye\OpenSim-NGC\OpenSim-Develop-Net6\bin\System.Drawing.Common.dll" />
-      <Content Remove="D:\Documents\Projects\UtopiaSkye\OpenSim-NGC\OpenSim-Develop-Net6\bin\System.Drawing.Common.dll.linux" />
-      <Content Remove="D:\Documents\Projects\UtopiaSkye\OpenSim-NGC\OpenSim-Develop-Net6\bin\System.Drawing.Common.dll.win" />
-      <Content Remove="D:\Documents\Projects\UtopiaSkye\OpenSim-NGC\OpenSim-Develop-Net6\bin\System.Runtime.Caching.dll" />
-      <Content Remove="D:\Documents\Projects\UtopiaSkye\OpenSim-NGC\OpenSim-Develop-Net6\bin\System.Security.Permissions.dll" />
-    </ItemGroup>
   <ItemGroup>
 	<Content Include="Resources/OpenSim.addin.xml">
 	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>

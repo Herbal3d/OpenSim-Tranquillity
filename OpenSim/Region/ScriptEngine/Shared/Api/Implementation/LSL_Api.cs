@@ -3011,15 +3011,6 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             }
         }
 
-        public void llLinkStopSound(LSL_Integer linknumber)
-        {
-            if (m_SoundModule != null)
-            {
-                foreach(SceneObjectPart sop in GetLinkParts(linknumber))
-                    m_SoundModule.StopSound(sop.UUID);
-            }
-        }
-
         public void llPreloadSound(string sound)
         {
             if (m_SoundModule is null)
