@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.15" />
     <PackageReference Include="Mono.Addins" Version="1.4.1" />
-    <PackageReference Include="MySql.Data" Version="8.0.32" />
+    <PackageReference Include="MySql.Data" Version="8.0.32.1" />
     <PackageReference Include="nini-core" Version="0.9.2.16" />
   </ItemGroup>
   <ItemGroup>
@@ -19,9 +19,6 @@
     </Reference>
     <Reference Include="OpenMetaverseTypes">
       <HintPath>..\..\..\bin\OpenMetaverseTypes.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Web">
       <Private>False</Private>
     </Reference>
   </ItemGroup>
