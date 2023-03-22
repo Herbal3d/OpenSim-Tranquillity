@@ -110,7 +110,7 @@ namespace OpenSim.Data.SQLite
         {
             try
             {
-                DllmapConfigHelper. RegisterAssembly(typeof(SQLiteConnection).Assembly);
+                DllmapConfigHelper.RegisterAssembly(typeof(SqliteConnection).Assembly);
 
                 m_connectionString = connectionString;
 
@@ -1248,6 +1248,7 @@ namespace OpenSim.Data.SQLite
             createCol(prims, "sitactrange", typeof(float));
 
             createCol(prims, "pseudocrc", typeof(int));
+            createCol(prims, "sopanims", typeof(byte[]));
 
             // Add in contraints
             prims.PrimaryKey = new DataColumn[] { prims.Columns["UUID"] };
@@ -1297,7 +1298,7 @@ namespace OpenSim.Data.SQLite
             createCol(shapes, "Texture", typeof(Byte[]));
             createCol(shapes, "ExtraParams", typeof(Byte[]));
             createCol(shapes, "Media", typeof(String));
-
+            createCol(shapes, "MatOvrd", typeof(byte[]));
             shapes.PrimaryKey = new DataColumn[] { shapes.Columns["UUID"] };
 
             return shapes;
@@ -1795,6 +1796,19 @@ namespace OpenSim.Data.SQLite
             if(pseudocrc != 0)
                 prim.PseudoCRC = pseudocrc;
 
+            if (row["sopanims"] is not DBNull)
+            {
+                byte[] data = (byte[])row["sopanims"];
+                if (data.Length > 0)
+                    prim.DeSerializeAnimations(data);
+                else
+                    prim.Animations = null;
+            }
+            else
+            {
+                prim.Animations = null;
+            }
+
             return prim;
         }
 
@@ -2186,6 +2200,8 @@ namespace OpenSim.Data.SQLite
                 row["PhysInertia"] = String.Empty;
 
             row["pseudocrc"] = prim.PseudoCRC;
+            row["sopanims"] = prim.SerializeAnimations();
+
         }
 
         /// <summary>
@@ -2395,6 +2411,11 @@ namespace OpenSim.Data.SQLite
             if (row["Media"] is not System.DBNull)
                 s.Media = PrimitiveBaseShape.MediaList.FromXml((string)row["Media"]);
 
+            if (row["MatOvrd"] is not System.DBNull)
+                s.RenderMaterialsOvrFromRawBin((byte[])row["MatOvrd"]);
+            else
+                s.RenderMaterialsOvrFromRawBin(null);
+
             return s;
         }
 
@@ -2442,6 +2463,8 @@ namespace OpenSim.Data.SQLite
 
             if (s.Media is not null)
                 row["Media"] = s.Media.ToXml();
+
+            row["MatOvrd"] = s.RenderMaterialsOvrToRawBin();
         }
 
         /// <summary>

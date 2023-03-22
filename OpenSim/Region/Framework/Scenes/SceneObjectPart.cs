@@ -2199,9 +2199,16 @@ namespace OpenSim.Region.Framework.Scenes
 
             dupe.RezzerID = RezzerID;
 
-            byte[] extraP = new byte[Shape.ExtraParams.Length];
-            Array.Copy(Shape.ExtraParams, extraP, extraP.Length);
+            byte[] oldextrap = Shape.ExtraParams;
+            byte[] extraP = new byte[oldextrap.Length];
+            Array.Copy(oldextrap, extraP, extraP.Length);
             dupe.Shape.ExtraParams = extraP;
+            if(Shape.RenderMaterials is not null && Shape.RenderMaterials.overrides is not null && 
+                Shape.RenderMaterials.overrides.Length > 0)
+            {              
+                dupe.Shape.RenderMaterials.overrides = new Primitive.RenderMaterials.RenderMaterialOverrideEntry[Shape.RenderMaterials.overrides.Length];
+                Shape.RenderMaterials.overrides.CopyTo(dupe.Shape.RenderMaterials.overrides,0);
+            }
 
             dupe.m_sittingAvatars = new HashSet<ScenePresence>();
             dupe.SitTargetAvatar = UUID.Zero;
@@ -2225,7 +2232,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             ParentGroup.Scene.EventManager.TriggerOnSceneObjectPartCopy(dupe, this, userExposed);
 
-//            m_log.DebugFormat("[SCENE OBJECT PART]: Clone of {0} {1} finished", Name, UUID);
+            //m_log.DebugFormat("[SCENE OBJECT PART]: Clone of {0} {1} finished", Name, UUID);
 
             return dupe;
         }
@@ -3671,11 +3678,11 @@ namespace OpenSim.Region.Framework.Scenes
         /// <param name="face"></param>
         /// <param name="color"></param>
         /// <param name="alpha"></param>
-        public void SetFaceColorAlpha(int face, Vector3 color, double ?alpha)
+        public void SetFaceColorAlpha(int face, Vector3 color, float ?alpha)
         {
             Vector3 clippedColor = Vector3.Clamp(color, 0.0f, 1.0f);
             float clippedAlpha = alpha.HasValue ?
-                Utils.Clamp((float)alpha.Value, 0.0f, 1.0f) : 0;
+                Utils.Clamp(alpha.Value, 0.0f, 1.0f) : 0;
 
             // The only way to get a deep copy/ If we don't do this, we can
             // never detect color changes further down.
@@ -5704,7 +5711,7 @@ namespace OpenSim.Region.Framework.Scenes
                 if (AnimationsNames.Count == 0)
                     return new byte[] { 0 };
 
-                using (MemoryStream ms = new MemoryStream())
+                using (MemoryStream ms = new())
                 {
                     byte[] tmp = Utils.UInt16ToBytes((ushort)Animations.Count);
                     ms.Write(tmp, 0, 2);
@@ -5755,7 +5762,7 @@ namespace OpenSim.Region.Framework.Scenes
                 int pos = 2;
                 while(--count >= 0)
                 {
-                    UUID id = new UUID(data, pos);
+                    UUID id = new(data, pos);
                     if(id.IsZero())
                         break;
                     pos += 16;

@@ -2046,7 +2046,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if (!pbs.SculptEntry && (pbs.PathCurve == (byte)Extrusion.Straight || pbs.PathCurve == (byte)Extrusion.Flexible))
             {
                 if(flexi)
-                {                 
+                {
                     pbs.PathCurve = (byte)Extrusion.Flexible;
                     if(!sog.IsPhantom)
                     {
@@ -2240,7 +2240,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             }
 
             Primitive.TextureEntry tex = part.Shape.Textures;
-            int nsides = GetNumberOfSides(part); 
+            int nsides = GetNumberOfSides(part);
 
             if (face >= 0 && face < nsides)
             {
@@ -2536,7 +2536,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             SceneObjectGroup grp = part.ParentGroup;
             if (grp == null || grp.IsDeleted || grp.inTransit)
                 return;
- 
+
             LSL_Vector currentPos = GetPartLocalPos(part);
             LSL_Vector toPos = GetSetPosTarget(part, targetPos, currentPos, adjust);
 
@@ -2902,7 +2902,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if(soundID.IsZero())
                 return;
 
-            // send the sound, once, to all clients in range           
+            // send the sound, once, to all clients in range
             m_SoundModule.SendSound(m_host.UUID, soundID, volume, false, 0, false, false);
         }
 
@@ -2915,12 +2915,12 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
             SceneObjectPart sop;
             if (linknumber == ScriptBaseClass.LINK_THIS)
-                sop = m_host;               
+                sop = m_host;
             else if (linknumber < 0)
                 return;
             else if (linknumber < 2)
                 sop = m_host.ParentGroup.RootPart;
-            else 
+            else
                 sop = m_host.ParentGroup.GetLinkNumPart(linknumber);
 
             if(sop == null)
@@ -2930,7 +2930,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if (soundID.IsZero())
                 return;
 
-            // send the sound, once, to all clients in range           
+            // send the sound, once, to all clients in range
             m_SoundModule.SendSound(sop.UUID, soundID, volume, false, 0, false, false);
         }
 
@@ -3694,7 +3694,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 message = (message.Length > 1024) ? message[..1024] : message,
                 binaryBucket = Util.StringToBytes256("{0}/{1}/{2}/{3}", m_regionName, (int)pos.X, (int)pos.Y, (int)pos.Z)
             };
- 
+
             m_TransferModule?.SendInstantMessage(msg, delegate(bool success) {});
             ScriptSleep(m_sleepMsOnInstantMessage);
       }
@@ -3979,18 +3979,18 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
         public void llTargetOmega(LSL_Vector axis, double spinrate, double gain)
         {
-            TargetOmega(m_host, axis, spinrate, gain);
+            TargetOmega(m_host, axis, (float)spinrate, (float)gain);
         }
 
-        protected static void TargetOmega(SceneObjectPart part, LSL_Vector axis, double spinrate, double gain)
+        protected static void TargetOmega(SceneObjectPart part, LSL_Vector axis, float spinrate, float gain)
         {
-            if(gain == 0)
+            if(MathF.Abs(gain) < 1e-6f)
             {
                 part.UpdateAngularVelocity(Vector3.Zero);
                 part.ScheduleFullAnimUpdate();
             }
             else
-                part.UpdateAngularVelocity(axis * spinrate);
+                part.UpdateAngularVelocity((Vector3)axis * spinrate);
         }
 
         public LSL_Integer llGetStartParameter()
@@ -5393,7 +5393,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             {
                 if(key.IsZero())
                     return id;
-                
+
                 SceneObjectPart obj = World.GetSceneObjectPart(key);
                 return (obj == null) ? id : obj.OwnerID.ToString();
             }
@@ -5564,7 +5564,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 return LSL_Rotation.Identity;
 
             object item = src.Data[index];
-            
+
             if (item is LSL_Rotation rot)
                 return rot;
             if (item is LSL_String lls)
@@ -6126,7 +6126,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         /// Remove as they are done
         /// </summary>
         static readonly UUID busyAnimation = new("efcf670c-2d18-8128-973a-034ebc806b67");
-        
+
         public LSL_Integer llGetAgentInfo(LSL_Key id)
         {
 
@@ -6946,7 +6946,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                     int psystype;
                     try
                     {
-                        psystype = rules.GetLSLIntegerItem(i);
+                        psystype = rules.GetIntegerItem(i);
                     }
                     catch (InvalidCastException)
                     {
@@ -6958,7 +6958,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         case ScriptBaseClass.PSYS_PART_FLAGS:
                             try
                             {
-                                prules.PartDataFlags = (Primitive.ParticleSystem.ParticleDataFlags)(uint)rules.GetLSLIntegerItem(i + 1);
+                                prules.PartDataFlags = (Primitive.ParticleSystem.ParticleDataFlags)(uint)rules.GetIntegerItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
@@ -6985,7 +6985,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         case ScriptBaseClass.PSYS_PART_START_ALPHA:
                             try
                             {
-                                tempf = (float)rules.GetLSLFloatItem(i + 1);
+                                tempf = rules.GetStrictFloatItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
@@ -7013,7 +7013,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         case ScriptBaseClass.PSYS_PART_END_ALPHA:
                             try
                             {
-                                tempf = (float)rules.GetLSLFloatItem(i + 1);
+                                tempf = rules.GetStrictFloatItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
@@ -7054,7 +7054,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         case ScriptBaseClass.PSYS_PART_MAX_AGE:
                             try
                             {
-                                tempf = (float)rules.GetLSLFloatItem(i + 1);
+                                tempf = rules.GetStrictFloatItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
@@ -7082,7 +7082,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         case ScriptBaseClass.PSYS_SRC_PATTERN:
                             try
                             {
-                                tmpi = (int)rules.GetLSLIntegerItem(i + 1);
+                                tmpi = rules.GetIntegerItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
@@ -7099,35 +7099,35 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         case ScriptBaseClass.PSYS_SRC_INNERANGLE:
                             try
                             {
-                                tempf = (float)rules.GetLSLFloatItem(i + 1);
+                                tempf = rules.GetStrictFloatItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
                                 Error(originFunc, string.Format("Error running rule PSYS_SRC_INNERANGLE: arg #{0} - parameter 1 must be float", i + 1));
                                 return;
                             }
-                            prules.InnerAngle = (float)tempf;
+                            prules.InnerAngle = tempf;
                             prules.PartFlags &= 0xFFFFFFFD; // Make sure new angle format is off.
                             break;
 
                         case ScriptBaseClass.PSYS_SRC_OUTERANGLE:
                             try
                             {
-                                tempf = (float)rules.GetLSLFloatItem(i + 1);
+                                tempf = rules.GetStrictFloatItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
                                 Error(originFunc, string.Format("Error running rule PSYS_SRC_OUTERANGLE: arg #{0} - parameter 1 must be float", i + 1));
                                 return;
                             }
-                            prules.OuterAngle = (float)tempf;
+                            prules.OuterAngle = tempf;
                             prules.PartFlags &= 0xFFFFFFFD; // Make sure new angle format is off.
                             break;
 
                         case ScriptBaseClass.PSYS_PART_BLEND_FUNC_SOURCE:
                             try
                             {
-                                tmpi = (int)rules.GetLSLIntegerItem(i + 1);
+                                tmpi = rules.GetIntegerItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
@@ -7140,7 +7140,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         case ScriptBaseClass.PSYS_PART_BLEND_FUNC_DEST:
                             try
                             {
-                                tmpi = (int)rules.GetLSLIntegerItem(i + 1);
+                                tmpi = rules.GetIntegerItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
@@ -7153,33 +7153,33 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         case ScriptBaseClass.PSYS_PART_START_GLOW:
                             try
                             {
-                                tempf = (float)rules.GetLSLFloatItem(i + 1);
+                                tempf = rules.GetStrictFloatItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
                                 Error(originFunc, string.Format("Error running rule PSYS_PART_START_GLOW: arg #{0} - parameter 1 must be float", i + 1));
                                 return;
                             }
-                            prules.PartStartGlow = (float)tempf;
+                            prules.PartStartGlow = tempf;
                             break;
 
                         case ScriptBaseClass.PSYS_PART_END_GLOW:
                             try
                             {
-                                tempf = (float)rules.GetLSLFloatItem(i + 1);
+                                tempf = rules.GetStrictFloatItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
                                 Error(originFunc, string.Format("Error running rule PSYS_PART_END_GLOW: arg #{0} - parameter 1 must be float", i + 1));
                                 return;
                             }
-                            prules.PartEndGlow = (float)tempf;
+                            prules.PartEndGlow = tempf;
                             break;
 
                         case ScriptBaseClass.PSYS_SRC_TEXTURE:
                             try
                             {
-                                prules.Texture = ScriptUtils.GetAssetIdFromKeyOrItemName(m_host, rules.GetLSLStringItem(i + 1));
+                                prules.Texture = ScriptUtils.GetAssetIdFromKeyOrItemName(m_host, rules.GetStrictStringItem(i + 1));
                             }
                             catch(InvalidCastException)
                             {
@@ -7191,20 +7191,20 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         case ScriptBaseClass.PSYS_SRC_BURST_RATE:
                             try
                             {
-                                tempf = (float)rules.GetLSLFloatItem(i + 1);
+                                tempf = rules.GetStrictFloatItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
                                 Error(originFunc, string.Format("Error running rule PSYS_SRC_BURST_RATE: arg #{0} - parameter 1 must be float", i + 1));
                                 return;
                             }
-                            prules.BurstRate = (float)tempf;
+                            prules.BurstRate = tempf;
                             break;
 
                         case ScriptBaseClass.PSYS_SRC_BURST_PART_COUNT:
                             try
                             {
-                                prules.BurstPartCount = (byte)(int)rules.GetLSLIntegerItem(i + 1);
+                                prules.BurstPartCount = (byte)rules.GetIntegerItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
@@ -7216,53 +7216,53 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         case ScriptBaseClass.PSYS_SRC_BURST_RADIUS:
                             try
                             {
-                                tempf = (float)rules.GetLSLFloatItem(i + 1);
+                                tempf = rules.GetStrictFloatItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
                                 Error(originFunc, string.Format("Error running rule PSYS_SRC_BURST_RADIUS: arg #{0} - parameter 1 must be float", i + 1));
                                 return;
                             }
-                            prules.BurstRadius = (float)tempf;
+                            prules.BurstRadius = tempf;
                             break;
 
                         case ScriptBaseClass.PSYS_SRC_BURST_SPEED_MIN:
                             try
                             {
-                                tempf = (float)rules.GetLSLFloatItem(i + 1);
+                                tempf = rules.GetStrictFloatItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
                                 Error(originFunc, string.Format("Error running rule PSYS_SRC_BURST_SPEED_MIN: arg #{0} - parameter 1 must be float", i + 1));
                                 return;
                             }
-                            prules.BurstSpeedMin = (float)tempf;
+                            prules.BurstSpeedMin = tempf;
                             break;
 
                         case ScriptBaseClass.PSYS_SRC_BURST_SPEED_MAX:
                             try
                             {
-                                tempf = (float)rules.GetLSLFloatItem(i + 1);
+                                tempf = rules.GetStrictFloatItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
                                 Error(originFunc, string.Format("Error running rule PSYS_SRC_BURST_SPEED_MAX: arg #{0} - parameter 1 must be float", i + 1));
                                 return;
                             }
-                            prules.BurstSpeedMax = (float)tempf;
+                            prules.BurstSpeedMax = tempf;
                             break;
 
                         case ScriptBaseClass.PSYS_SRC_MAX_AGE:
                             try
                             {
-                                tempf = (float)rules.GetLSLFloatItem(i + 1);
+                                tempf = rules.GetStrictFloatItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
                                 Error(originFunc, string.Format("Error running rule PSYS_SRC_MAX_AGE: arg #{0} - parameter 1 must be float", i + 1));
                                 return;
                             }
-                            prules.MaxAge = (float)tempf;
+                            prules.MaxAge = tempf;
                             break;
 
                         case ScriptBaseClass.PSYS_SRC_TARGET_KEY:
@@ -7295,28 +7295,28 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         case ScriptBaseClass.PSYS_SRC_ANGLE_BEGIN:
                             try
                             {
-                                tempf = (float)rules.GetLSLFloatItem(i + 1);
+                                tempf = rules.GetStrictFloatItem(i + 1);
                             }
                             catch(InvalidCastException)
                             {
                                 Error(originFunc, string.Format("Error running rule PSYS_SRC_ANGLE_BEGIN: arg #{0} - parameter 1 must be float", i + 1));
                                 return;
                             }
-                            prules.InnerAngle = (float)tempf;
+                            prules.InnerAngle = tempf;
                             prules.PartFlags |= 0x02; // Set new angle format.
                             break;
 
                         case ScriptBaseClass.PSYS_SRC_ANGLE_END:
                             try
                             {
-                                tempf = (float)rules.GetLSLFloatItem(i + 1);
+                                tempf = rules.GetStrictFloatItem(i + 1);
                             }
                             catch (InvalidCastException)
                             {
                                 Error(originFunc, string.Format("Error running rule PSYS_SRC_ANGLE_END: arg #{0} - parameter 1 must be float", i + 1));
                                 return;
                             }
-                            prules.OuterAngle = (float)tempf;
+                            prules.OuterAngle = tempf;
                             prules.PartFlags |= 0x02; // Set new angle format.
                             break;
                     }
@@ -8360,7 +8360,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                 while (remaining.Length > 2)
                 {
-                    linknumber = remaining.GetLSLIntegerItem(0);
+                    linknumber = remaining.GetIntegerItem(0);
                     rules = remaining.GetSublist(1, -1);
                     parts.Clear();
                     prims = GetLinkParts(linknumber);
@@ -8403,7 +8403,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                 while (idx < options.Data.Length)
                 {
-                    int option = (int)options.GetLSLIntegerItem(idx++);
+                    int option = options.GetIntegerItem(idx++);
                     int remain = options.Data.Length - idx;
 
                     switch (option)
@@ -8411,7 +8411,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         case ScriptBaseClass.KFM_MODE:
                             if (remain < 1)
                                 break;
-                            int modeval = (int)options.GetLSLIntegerItem(idx++);
+                            int modeval = options.GetIntegerItem(idx++);
                             switch(modeval)
                             {
                                 case ScriptBaseClass.KFM_FORWARD:
@@ -8431,7 +8431,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         case ScriptBaseClass.KFM_DATA:
                             if (remain < 1)
                                 break;
-                            int dataval = (int)options.GetLSLIntegerItem(idx++);
+                            int dataval = options.GetIntegerItem(idx++);
                             data = (KeyframeMotion.DataFormat)dataval;
                             break;
                     }
@@ -8473,7 +8473,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         frame.Rotation = q;
                     }
 
-                    float tempf = (float)frames.GetLSLFloatItem(idx++);
+                    float tempf = frames.GetStrictFloatItem(idx++);
                     frame.TimeMS = (int)(tempf * 1000.0f);
 
                     keyframes.Add(frame);
@@ -8497,12 +8497,12 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                 while (idx < options.Data.Length)
                 {
-                    int option = (int)options.GetLSLIntegerItem(idx++);
+                    int option = options.GetIntegerItem(idx++);
 
                     switch (option)
                     {
                         case ScriptBaseClass.KFM_COMMAND:
-                            int cmd = (int)options.GetLSLIntegerItem(idx++);
+                            int cmd = options.GetIntegerItem(idx++);
                             switch (cmd)
                             {
                                 case ScriptBaseClass.KFM_CMD_PLAY:
@@ -8605,7 +8605,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 while (idx < rules.Length)
                 {
                     ++rulesParsed;
-                    int code = rules.GetLSLIntegerItem(idx++);
+                    int code = rules.GetIntegerItem(idx++);
 
                     int remain = rules.Length - idx;
                     idxStart = idx;
@@ -8681,7 +8681,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                             try
                             {
-                                code = (int)rules.GetLSLIntegerItem(idx++);
+                                code = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -8708,7 +8708,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                                     try
                                     {
-                                        face = (int)rules.GetLSLIntegerItem(idx++);
+                                        face = rules.GetIntegerItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -8726,7 +8726,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        hollow = (float)rules.GetLSLFloatItem(idx++);
+                                        hollow = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -8771,7 +8771,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                                     try
                                     {
-                                        face = (int)rules.GetLSLIntegerItem(idx++); // holeshape
+                                        face = rules.GetIntegerItem(idx++); // holeshape
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -8789,7 +8789,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        hollow = (float)rules.GetLSLFloatItem(idx++);
+                                        hollow = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -8833,7 +8833,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                                     try
                                     {
-                                        face = (int)rules.GetLSLIntegerItem(idx++); // holeshape
+                                        face = rules.GetIntegerItem(idx++); // holeshape
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -8851,7 +8851,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        hollow = (float)rules.GetLSLFloatItem(idx++);
+                                        hollow = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -8895,7 +8895,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                                     try
                                     {
-                                        face = (int)rules.GetLSLIntegerItem(idx++); // holeshape
+                                        face = rules.GetIntegerItem(idx++); // holeshape
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -8913,7 +8913,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        hollow = (float)rules.GetLSLFloatItem(idx++);
+                                        hollow = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -8948,7 +8948,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                                     try
                                     {
-                                        face = (int)rules.GetLSLIntegerItem(idx++); // holeshape
+                                        face = rules.GetIntegerItem(idx++); // holeshape
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -8966,7 +8966,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        hollow = (float)rules.GetLSLFloatItem(idx++);
+                                        hollow = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -9020,7 +9020,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        revolutions = (float)rules.GetLSLFloatItem(idx++);
+                                        revolutions = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -9029,7 +9029,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        radiusoffset = (float)rules.GetLSLFloatItem(idx++);
+                                        radiusoffset = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -9038,7 +9038,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        skew = (float)rules.GetLSLFloatItem(idx++);
+                                        skew = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -9055,7 +9055,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                                     try
                                     {
-                                        face = (int)rules.GetLSLIntegerItem(idx++); // holeshape
+                                        face = rules.GetIntegerItem(idx++); // holeshape
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -9073,7 +9073,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        hollow = (float)rules.GetLSLFloatItem(idx++);
+                                        hollow = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -9127,7 +9127,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        revolutions = (float)rules.GetLSLFloatItem(idx++);
+                                        revolutions = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -9136,7 +9136,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        radiusoffset = (float)rules.GetLSLFloatItem(idx++);
+                                        radiusoffset = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -9145,7 +9145,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        skew = (float)rules.GetLSLFloatItem(idx++);
+                                        skew = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -9162,7 +9162,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                                     try
                                     {
-                                        face = (int)rules.GetLSLIntegerItem(idx++); // holeshape
+                                        face = rules.GetIntegerItem(idx++); // holeshape
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -9180,7 +9180,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        hollow = (float)rules.GetLSLFloatItem(idx++);
+                                        hollow = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -9234,7 +9234,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        revolutions = (float)rules.GetLSLFloatItem(idx++);
+                                        revolutions = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -9243,7 +9243,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        radiusoffset = (float)rules.GetLSLFloatItem(idx++);
+                                        radiusoffset = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -9252,7 +9252,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     }
                                     try
                                     {
-                                        skew = (float)rules.GetLSLFloatItem(idx++);
+                                        skew = rules.GetStrictFloatItem(idx++);
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -9270,7 +9270,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                     string map = rules.Data[idx++].ToString();
                                     try
                                     {
-                                        face = (int)rules.GetLSLIntegerItem(idx++); // type
+                                        face = rules.GetIntegerItem(idx++); // type
                                     }
                                     catch(InvalidCastException)
                                     {
@@ -9287,7 +9287,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             if (remain < 5)
                                 return new LSL_List();
 
-                            face=(int)rules.GetLSLIntegerItem(idx++);
+                            face=rules.GetIntegerItem(idx++);
                             string tex;
                             LSL_Vector repeats;
                             LSL_Vector offsets;
@@ -9314,7 +9314,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                rotation = (double)rules.GetLSLFloatItem(idx++);
+                                rotation = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9330,11 +9330,11 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                 return new LSL_List();
 
                             LSL_Vector color;
-                            double alpha;
+                            float alpha;
 
                             try
                             {
-                                face = (int)rules.GetLSLIntegerItem(idx++);
+                                face = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9352,7 +9352,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                alpha = (double)rules.GetLSLFloatItem(idx++);
+                                alpha = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9377,7 +9377,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                             try
                             {
-                                flexi = rules.GetLSLIntegerItem(idx++);
+                                flexi = rules.GetIntegerItem(idx++) != 0;
                             }
                             catch(InvalidCastException)
                             {
@@ -9386,7 +9386,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                softness = rules.GetLSLIntegerItem(idx++);
+                                softness = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9395,7 +9395,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                gravity = (float)rules.GetLSLFloatItem(idx++);
+                                gravity = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9404,7 +9404,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                friction = (float)rules.GetLSLFloatItem(idx++);
+                                friction = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9413,7 +9413,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                wind = (float)rules.GetLSLFloatItem(idx++);
+                                wind = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9422,7 +9422,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                tension = (float)rules.GetLSLFloatItem(idx++);
+                                tension = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9454,7 +9454,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                             try
                             {
-                                light = rules.GetLSLIntegerItem(idx++);
+                                light = rules.GetIntegerItem(idx++) != 0;
                             }
                             catch(InvalidCastException)
                             {
@@ -9472,7 +9472,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                intensity = (float)rules.GetLSLFloatItem(idx++);
+                                intensity = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9481,7 +9481,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                radius = (float)rules.GetLSLFloatItem(idx++);
+                                radius = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9490,7 +9490,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                falloff = (float)rules.GetLSLFloatItem(idx++);
+                                falloff = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9510,7 +9510,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                             try
                             {
-                                face = rules.GetLSLIntegerItem(idx++);
+                                face = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9519,7 +9519,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                glow = (float)rules.GetLSLFloatItem(idx++);
+                                glow = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9540,7 +9540,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                             try
                             {
-                                face = (int)rules.GetLSLIntegerItem(idx++);
+                                face = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9549,7 +9549,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                shiny = (int)rules.GetLSLIntegerItem(idx++);
+                                shiny = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9558,7 +9558,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                bump = (Bumpiness)(int)rules.GetLSLIntegerItem(idx++);
+                                bump = (Bumpiness)rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9577,7 +9577,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                             try
                             {
-                                face = rules.GetLSLIntegerItem(idx++);
+                                face = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9586,7 +9586,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                st = rules.GetLSLIntegerItem(idx++);
+                                st = rules.GetIntegerItem(idx++) != 0;
                             }
                             catch(InvalidCastException)
                             {
@@ -9603,7 +9603,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                             try
                             {
-                                mat = rules.GetLSLIntegerItem(idx++);
+                                mat = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9640,7 +9640,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                             try
                             {
-                                shape_type = rules.GetLSLIntegerItem(idx++);
+                                shape_type = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9664,11 +9664,11 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             if (remain < 5)
                                 return new LSL_List();
 
-                            int material_bits = rules.GetLSLIntegerItem(idx++);
-                            float material_density = (float)rules.GetLSLFloatItem(idx++);
-                            float material_friction = (float)rules.GetLSLFloatItem(idx++);
-                            float material_restitution = (float)rules.GetLSLFloatItem(idx++);
-                            float material_gravity_modifier = (float)rules.GetLSLFloatItem(idx++);
+                            int material_bits = rules.GetIntegerItem(idx++);
+                            float material_density = rules.GetFloatItem(idx++);
+                            float material_friction = rules.GetFloatItem(idx++);
+                            float material_restitution = rules.GetFloatItem(idx++);
+                            float material_gravity_modifier = rules.GetFloatItem(idx++);
 
                             SetPhysicsMaterial(part, material_bits, material_density, material_friction, material_restitution, material_gravity_modifier);
 
@@ -9691,7 +9691,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                             try
                             {
-                                face = rules.GetLSLIntegerItem(idx++);
+                                face = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9700,7 +9700,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                style = rules.GetLSLIntegerItem(idx++);
+                                style = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9714,11 +9714,11 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                 return new LSL_List();
                             string primText;
                             LSL_Vector primTextColor;
-                            LSL_Float primTextAlpha;
+                            float primTextAlpha;
 
                             try
                             {
-                                primText = rules.GetLSLStringItem(idx++);
+                                primText = rules.GetStrictStringItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9736,7 +9736,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                primTextAlpha = rules.GetLSLFloatItem(idx++);
+                                primTextAlpha = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9744,7 +9744,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                return new LSL_List();
                             }
                             Vector3 av3 = Vector3.Clamp(primTextColor, 0.0f, 1.0f);
-                            part.SetText(primText, av3, Utils.Clamp((float)primTextAlpha, 0.0f, 1.0f));
+                            part.SetText(primText, av3, Utils.Clamp(primTextAlpha, 0.0f, 1.0f));
 
                             break;
 
@@ -9753,7 +9753,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                 return new LSL_List();
                             try
                             {
-                                string primName = rules.GetLSLStringItem(idx++);
+                                string primName = rules.GetStrictStringItem(idx++);
                                 part.Name = primName;
                             }
                             catch(InvalidCastException)
@@ -9767,7 +9767,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                 return new LSL_List();
                             try
                             {
-                                string primDesc = rules.GetLSLStringItem(idx++);
+                                string primDesc = rules.GetStrictStringItem(idx++);
                                 part.Description = primDesc;
                             }
                             catch(InvalidCastException)
@@ -9796,8 +9796,8 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             if (remain < 3)
                                 return new LSL_List();
                             LSL_Vector axis;
-                            LSL_Float spinrate;
-                            LSL_Float gain;
+                            float spinrate;
+                            float gain;
 
                             try
                             {
@@ -9810,7 +9810,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                spinrate = rules.GetLSLFloatItem(idx++);
+                                spinrate = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9819,14 +9819,14 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             }
                             try
                             {
-                                gain = rules.GetLSLFloatItem(idx++);
+                                gain = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
                                 Error(originFunc, string.Format("Error running rule #{0} -> PRIM_OMEGA: arg #{1} - parameter 4 must be float", rulesParsed, idx - idxStart - 1));
                                 return new LSL_List();
                             }
-                            TargetOmega(part, axis, (double)spinrate, (double)gain);
+                            TargetOmega(part, axis, spinrate, gain);
                             break;
 
                         case ScriptBaseClass.PRIM_SLICE:
@@ -9852,7 +9852,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             int active;
                             try
                             {
-                                active = rules.GetLSLIntegerItem(idx++);
+                                active = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9898,7 +9898,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                             try
                             {
-                                face = rules.GetLSLIntegerItem(idx++);
+                                face = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9909,7 +9909,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             int materialAlphaMode;
                             try
                             {
-                                materialAlphaMode = rules.GetLSLIntegerItem(idx++);
+                                materialAlphaMode = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9926,7 +9926,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             int materialMaskCutoff;
                             try
                             {
-                                materialMaskCutoff = rules.GetLSLIntegerItem(idx++);
+                                materialMaskCutoff = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9939,7 +9939,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                Error(originFunc, string.Format("Error running rule #{0} -> PRIM_ALPHA_MODE: arg #{1} - must be 0 to 255", rulesParsed, idx - idxStart - 1));
                                return new LSL_List();
                             }
-    
+
                             materialChanged |= SetMaterialAlphaMode(part, face, materialAlphaMode, materialMaskCutoff);
                             break;
 
@@ -9949,7 +9949,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                             try
                             {
-                                face = rules.GetLSLIntegerItem(idx++);
+                                face = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -9993,23 +9993,23 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                 return new LSL_List();
                             }
 
-                            LSL_Float mnrot;
+                            float mnrot;
                             try
                             {
-                                mnrot = rules.GetLSLFloatItem(idx++);
+                                mnrot = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
                                 Error(originFunc, string.Format("Error running rule #{0} -> PRIM_NORMAL: arg #{1} - must be float", rulesParsed, idx - idxStart - 1));
                                 return new LSL_List();
                             }
-    
+
                             float repeatX = (float)Util.Clamp(mnrepeat.x,-100.0, 100.0);
                             float repeatY = (float)Util.Clamp(mnrepeat.y,-100.0, 100.0);
                             float offsetX = (float)Util.Clamp(mnoffset.x, 0, 1.0);
                             float offsetY = (float)Util.Clamp(mnoffset.y, 0, 1.0);
 
-                            materialChanged |= SetMaterialNormalMap(part, face, mapID, repeatX, repeatY, offsetX, offsetY, (float)mnrot);
+                            materialChanged |= SetMaterialNormalMap(part, face, mapID, repeatX, repeatY, offsetX, offsetY, mnrot);
                             break;
 
                         case ScriptBaseClass.PRIM_SPECULAR:
@@ -10018,7 +10018,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                             try
                             {
-                                face = rules.GetLSLIntegerItem(idx++);
+                                face = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -10062,10 +10062,10 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                 return new LSL_List();
                             }
 
-                            LSL_Float msrot;
+                            float msrot;
                             try
                             {
-                                msrot = rules.GetLSLFloatItem(idx++);
+                                msrot = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -10087,7 +10087,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             LSL_Integer msgloss;
                             try
                             {
-                                msgloss = rules.GetLSLIntegerItem(idx++);
+                                msgloss = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -10098,14 +10098,14 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             LSL_Integer msenv;
                             try
                             {
-                                msenv = rules.GetLSLIntegerItem(idx++);
+                                msenv = rules.GetIntegerItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
                                Error(originFunc, string.Format("Error running rule #{0} -> PRIM_SPECULAR: arg #{1} - must be integer", rulesParsed, idx - idxStart - 1));
                                return new LSL_List();
                             }
-   
+
                             float srepeatX = (float)Util.Clamp(msrepeat.x, -100.0, 100.0);
                             float srepeatY = (float)Util.Clamp(msrepeat.y, -100.0, 100.0);
                             float soffsetX = (float)Util.Clamp(msoffset.x, -1.0, 1.0);
@@ -10117,7 +10117,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             byte env = (byte)Util.Clamp((int)msenv, 0, 255);
 
                             materialChanged |= SetMaterialSpecMap(part, face, smapID, srepeatX, srepeatY, soffsetX, soffsetY,
-                                                (float)msrot, colorR, colorG, colorB, gloss, env);
+                                                msrot, colorR, colorG, colorB, gloss, env);
 
                             break;
 
@@ -10146,10 +10146,10 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                 }
                             }
 
-                            LSL_Float fov;
+                            float fov;
                             try
                             {
-                                fov = rules.GetLSLFloatItem(idx++);
+                                fov = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -10157,10 +10157,10 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                 return new LSL_List();
                             }
 
-                            LSL_Float focus;
+                            float focus;
                             try
                             {
-                                focus = rules.GetLSLFloatItem(idx++);
+                                focus = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -10168,10 +10168,10 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                 return new LSL_List();
                             }
 
-                            LSL_Float amb;
+                            float amb;
                             try
                             {
-                                amb = rules.GetLSLFloatItem(idx++);
+                                amb = rules.GetStrictFloatItem(idx++);
                             }
                             catch(InvalidCastException)
                             {
@@ -10183,9 +10183,9 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             {
                                 part.Shape.ProjectionEntry = true;
                                 part.Shape.ProjectionTextureUUID = stexID;
-                                part.Shape.ProjectionFOV = Util.Clamp((float)fov, 0, 3.0f);
-                                part.Shape.ProjectionFocus = Util.Clamp((float)focus, 0, 20.0f);
-                                part.Shape.ProjectionAmbiance = Util.Clamp((float)amb, 0, 1.0f);
+                                part.Shape.ProjectionFOV = Util.Clamp(fov, 0, 3.0f);
+                                part.Shape.ProjectionFocus = Util.Clamp(focus, 0, 20.0f);
+                                part.Shape.ProjectionAmbiance = Util.Clamp(amb, 0, 1.0f);
 
                                 part.ParentGroup.HasGroupChanged = true;
                                 part.ScheduleFullUpdate();
@@ -10247,8 +10247,8 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         {
             if(m_materialsModule == null)
                 return false;
-           
-            int nsides =  part.GetNumberOfSides();                      
+
+            int nsides =  part.GetNumberOfSides();
 
             if(face == ScriptBaseClass.ALL_SIDES)
             {
@@ -10301,8 +10301,8 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         {
             if(m_materialsModule == null)
                 return false;
-           
-            int nsides =  part.GetNumberOfSides();                      
+
+            int nsides =  part.GetNumberOfSides();
 
             if(face == ScriptBaseClass.ALL_SIDES)
             {
@@ -10365,8 +10365,8 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         {
             if(m_materialsModule == null)
                 return false;
-           
-            int nsides =  part.GetNumberOfSides();                      
+
+            int nsides =  part.GetNumberOfSides();
 
             if(face == ScriptBaseClass.ALL_SIDES)
             {
@@ -10440,7 +10440,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 while (idx < rules.Length)
                 {
                     ++rulesParsed;
-                    int code = rules.GetLSLIntegerItem(idx++);
+                    int code = rules.GetIntegerItem(idx++);
 
                     int remain = rules.Length - idx;
                     idxStart = idx;
@@ -10826,7 +10826,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
             while (remaining is not null && remaining.Length > 1)
             {
-                int linknumber = remaining.GetLSLIntegerItem(0);
+                int linknumber = remaining.GetIntegerItem(0);
                 rules = remaining.GetSublist(1, -1);
                 List<SceneObjectPart> parts = GetLinkParts(linknumber);
                 if(parts.Count == 0)
@@ -10867,7 +10867,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
                 if (remaining.Length > 0)
                 {
-                    linknumber = remaining.GetLSLIntegerItem(0);
+                    linknumber = remaining.GetIntegerItem(0);
                     rules = remaining.GetSublist(1, -1);
                 }
                 else
@@ -10886,7 +10886,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
             while (idx < rules.Length)
             {
-                int code = (int)rules.GetLSLIntegerItem(idx++);
+                int code = rules.GetIntegerItem(idx++);
                 int remain = rules.Length - idx;
 
                 switch (code)
@@ -11022,7 +11022,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         if (remain < 1)
                             return new LSL_List();
 
-                        face = (int)rules.GetLSLIntegerItem(idx++);
+                        face = rules.GetIntegerItem(idx++);
                         tex = part.Shape.Textures;
 
                         if (face == ScriptBaseClass.ALL_SIDES)
@@ -11063,7 +11063,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         if (remain < 1)
                             return new LSL_List();
 
-                        face = (int)rules.GetLSLIntegerItem(idx++);
+                        face = rules.GetIntegerItem(idx++);
                         tex = part.Shape.Textures;
                         Color4 texcolor;
 
@@ -11093,7 +11093,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         if (remain < 1)
                             return new LSL_List();
 
-                        face = (int)rules.GetLSLIntegerItem(idx++);
+                        face = rules.GetIntegerItem(idx++);
                         tex = part.Shape.Textures;
                         int shiny;
                         if (face == ScriptBaseClass.ALL_SIDES)
@@ -11150,7 +11150,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         if (remain < 1)
                             return new LSL_List();
 
-                        face = (int)rules.GetLSLIntegerItem(idx++);
+                        face = rules.GetIntegerItem(idx++);
 
                         tex = part.Shape.Textures;
                         int fullbright;
@@ -11208,7 +11208,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         if (remain < 1)
                             return new LSL_List();
 
-                        face = (int)rules.GetLSLIntegerItem(idx++);
+                        face = rules.GetIntegerItem(idx++);
 
                         tex = part.Shape.Textures;
                         if (face == ScriptBaseClass.ALL_SIDES)
@@ -11257,7 +11257,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         if (remain < 1)
                             return new LSL_List();
 
-                        face = (int)rules.GetLSLIntegerItem(idx++);
+                        face = rules.GetIntegerItem(idx++);
 
                         tex = part.Shape.Textures;
                         float primglow;
@@ -11351,7 +11351,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         if (remain < 1)
                             return new LSL_List();
 
-                        face = (int)rules.GetLSLIntegerItem(idx++);
+                        face = rules.GetIntegerItem(idx++);
                         tex = part.Shape.Textures;
                         if (face == ScriptBaseClass.ALL_SIDES)
                         {
@@ -11526,7 +11526,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
             for (int i = 0; i < rules.Length; i++)
             {
-                int code = (int)rules.GetLSLIntegerItem(i);
+                int code = rules.GetIntegerItem(i);
 
                 switch (code)
                 {
@@ -11649,16 +11649,16 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
             while (i < rules.Length - 1)
             {
-                int code = rules.GetLSLIntegerItem(i++);
+                int code = rules.GetIntegerItem(i++);
 
                 switch (code)
                 {
                     case ScriptBaseClass.PRIM_MEDIA_ALT_IMAGE_ENABLE:
-                        me.EnableAlterntiveImage = (rules.GetLSLIntegerItem(i++) != 0 ? true : false);
+                        me.EnableAlterntiveImage = rules.GetIntegerItem(i++) != 0;
                         break;
 
                     case ScriptBaseClass.PRIM_MEDIA_CONTROLS:
-                        int v = rules.GetLSLIntegerItem(i++);
+                        int v = rules.GetIntegerItem(i++);
                         if (ScriptBaseClass.PRIM_MEDIA_CONTROLS_STANDARD == v)
                             me.Controls = MediaControls.Standard;
                         else
@@ -11666,47 +11666,47 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         break;
 
                     case ScriptBaseClass.PRIM_MEDIA_CURRENT_URL:
-                        me.CurrentURL = rules.GetLSLStringItem(i++);
+                        me.CurrentURL = rules.GetStringItem(i++);
                         break;
 
                     case ScriptBaseClass.PRIM_MEDIA_HOME_URL:
-                        me.HomeURL = rules.GetLSLStringItem(i++);
+                        me.HomeURL = rules.GetStringItem(i++);
                         break;
 
                     case ScriptBaseClass.PRIM_MEDIA_AUTO_LOOP:
-                        me.AutoLoop = (ScriptBaseClass.TRUE == rules.GetLSLIntegerItem(i++) ? true : false);
+                        me.AutoLoop = rules.GetIntegerItem(i++) != 0;
                         break;
 
                     case ScriptBaseClass.PRIM_MEDIA_AUTO_PLAY:
-                        me.AutoPlay = (ScriptBaseClass.TRUE == rules.GetLSLIntegerItem(i++) ? true : false);
+                        me.AutoPlay = rules.GetIntegerItem(i++) != 0;
                         break;
 
                     case ScriptBaseClass.PRIM_MEDIA_AUTO_SCALE:
-                        me.AutoScale = (ScriptBaseClass.TRUE == rules.GetLSLIntegerItem(i++) ? true : false);
+                        me.AutoScale = rules.GetIntegerItem(i++) != 0;
                         break;
 
                     case ScriptBaseClass.PRIM_MEDIA_AUTO_ZOOM:
-                        me.AutoZoom = (ScriptBaseClass.TRUE == rules.GetLSLIntegerItem(i++) ? true : false);
+                        me.AutoZoom = rules.GetIntegerItem(i++) != 0;
                         break;
 
                     case ScriptBaseClass.PRIM_MEDIA_FIRST_CLICK_INTERACT:
-                        me.InteractOnFirstClick = (ScriptBaseClass.TRUE == rules.GetLSLIntegerItem(i++) ? true : false);
+                        me.InteractOnFirstClick = rules.GetIntegerItem(i++) != 0;
                         break;
 
                     case ScriptBaseClass.PRIM_MEDIA_WIDTH_PIXELS:
-                        me.Width = (int)rules.GetLSLIntegerItem(i++);
+                        me.Width = rules.GetIntegerItem(i++);
                         break;
 
                     case ScriptBaseClass.PRIM_MEDIA_HEIGHT_PIXELS:
-                        me.Height = (int)rules.GetLSLIntegerItem(i++);
+                        me.Height = rules.GetIntegerItem(i++);
                         break;
 
                     case ScriptBaseClass.PRIM_MEDIA_WHITELIST_ENABLE:
-                        me.EnableWhiteList = (ScriptBaseClass.TRUE == rules.GetLSLIntegerItem(i++) ? true : false);
+                        me.EnableWhiteList = rules.GetIntegerItem(i++) != 0;
                         break;
 
                     case ScriptBaseClass.PRIM_MEDIA_WHITELIST:
-                        string[] rawWhiteListUrls = rules.GetLSLStringItem(i++).ToString().Split(new char[] { ',' });
+                        string[] rawWhiteListUrls = rules.GetStringItem(i++).Split(new char[] { ',' });
                         List<string> whiteListUrls = new();
                         Array.ForEach(
                             rawWhiteListUrls, delegate(string rawUrl) { whiteListUrls.Add(rawUrl.Trim()); });
@@ -11714,11 +11714,11 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         break;
 
                     case ScriptBaseClass.PRIM_MEDIA_PERMS_INTERACT:
-                        me.InteractPermissions = (MediaPermission)(byte)(int)rules.GetLSLIntegerItem(i++);
+                        me.InteractPermissions = (MediaPermission)(byte)rules.GetIntegerItem(i++);
                         break;
 
                     case ScriptBaseClass.PRIM_MEDIA_PERMS_CONTROL:
-                        me.ControlPermissions = (MediaPermission)(byte)(int)rules.GetLSLIntegerItem(i++);
+                        me.ControlPermissions = (MediaPermission)(byte)rules.GetIntegerItem(i++);
                         break;
 
                     default: return ScriptBaseClass.LSL_STATUS_MALFORMED_PARAMS;
@@ -12430,7 +12430,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         {
             try
             {
-    
+
                 if (m_regionName.Equals(simulator))
                 {
                     string lreply = String.Empty;
@@ -13030,10 +13030,10 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             }
             int[] nPrice = new int[5];
             nPrice[0] = price;
-            nPrice[1] = quick_pay_buttons.GetLSLIntegerItem(0);
-            nPrice[2] = quick_pay_buttons.GetLSLIntegerItem(1);
-            nPrice[3] = quick_pay_buttons.GetLSLIntegerItem(2);
-            nPrice[4] = quick_pay_buttons.GetLSLIntegerItem(3);
+            nPrice[1] = quick_pay_buttons.GetIntegerItem(0);
+            nPrice[2] = quick_pay_buttons.GetIntegerItem(1);
+            nPrice[3] = quick_pay_buttons.GetIntegerItem(2);
+            nPrice[4] = quick_pay_buttons.GetIntegerItem(3);
             m_host.ParentGroup.RootPart.PayPrice = nPrice;
             m_host.ParentGroup.HasGroupChanged = true;
         }
@@ -14773,7 +14773,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 int linknumber;
                 try
                 {
-                    linknumber = remaining.GetLSLIntegerItem(0);
+                    linknumber = remaining.GetIntegerItem(0);
                 }
                 catch (InvalidCastException)
                 {
@@ -14822,7 +14822,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 int linknumber;
                 try
                 {
-                    linknumber = remaining.GetLSLIntegerItem(0);
+                    linknumber = remaining.GetIntegerItem(0);
                 }
                 catch (InvalidCastException)
                 {
@@ -15307,14 +15307,14 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
             for (int i = 0; i < options.Length; i += 2)
             {
-                if (options.GetLSLIntegerItem(i) == ScriptBaseClass.RC_MAX_HITS)
-                    count = options.GetLSLIntegerItem(i + 1);
-                else if (options.GetLSLIntegerItem(i) == ScriptBaseClass.RC_DETECT_PHANTOM)
-                    detectPhantom = (options.GetLSLIntegerItem(i + 1) > 0);
-                else if (options.GetLSLIntegerItem(i) == ScriptBaseClass.RC_DATA_FLAGS)
-                    dataFlags = options.GetLSLIntegerItem(i + 1);
-                else if (options.GetLSLIntegerItem(i) == ScriptBaseClass.RC_REJECT_TYPES)
-                    rejectTypes = options.GetLSLIntegerItem(i + 1);
+                if (options.GetIntegerItem(i) == ScriptBaseClass.RC_MAX_HITS)
+                    count = options.GetIntegerItem(i + 1);
+                else if (options.GetIntegerItem(i) == ScriptBaseClass.RC_DETECT_PHANTOM)
+                    detectPhantom = (options.GetIntegerItem(i + 1) > 0);
+                else if (options.GetIntegerItem(i) == ScriptBaseClass.RC_DATA_FLAGS)
+                    dataFlags = options.GetIntegerItem(i + 1);
+                else if (options.GetIntegerItem(i) == ScriptBaseClass.RC_REJECT_TYPES)
+                    rejectTypes = options.GetIntegerItem(i + 1);
             }
 
             if (count > 16)
@@ -15570,14 +15570,14 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             bool notdetectPhantom = true;
             for (int i = 0; i < options.Length; i += 2)
             {
-                if (options.GetLSLIntegerItem(i) == ScriptBaseClass.RC_REJECT_TYPES)
-                    rejectTypes = options.GetLSLIntegerItem(i + 1);
-                else if (options.GetLSLIntegerItem(i) == ScriptBaseClass.RC_DATA_FLAGS)
-                    dataFlags = options.GetLSLIntegerItem(i + 1);
-                else if (options.GetLSLIntegerItem(i) == ScriptBaseClass.RC_MAX_HITS)
-                    maxHits = options.GetLSLIntegerItem(i + 1);
-                else if (options.GetLSLIntegerItem(i) == ScriptBaseClass.RC_DETECT_PHANTOM)
-                    notdetectPhantom = (options.GetLSLIntegerItem(i + 1) == 0);
+                if (options.GetIntegerItem(i) == ScriptBaseClass.RC_REJECT_TYPES)
+                    rejectTypes = options.GetIntegerItem(i + 1);
+                else if (options.GetIntegerItem(i) == ScriptBaseClass.RC_DATA_FLAGS)
+                    dataFlags = options.GetIntegerItem(i + 1);
+                else if (options.GetIntegerItem(i) == ScriptBaseClass.RC_MAX_HITS)
+                    maxHits = options.GetIntegerItem(i + 1);
+                else if (options.GetIntegerItem(i) == ScriptBaseClass.RC_DETECT_PHANTOM)
+                    notdetectPhantom = (options.GetIntegerItem(i + 1) == 0);
             }
             if (maxHits > m_maxHitsInCastRay)
                 maxHits = m_maxHitsInCastRay;
@@ -16664,7 +16664,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 while (idx < rules.Length)
                 {
                     ++rulesParsed;
-                    int code = rules.GetLSLIntegerItem(idx++);
+                    int code = rules.GetIntegerItem(idx++);
 
                     int remain = rules.Length - idx;
                     idxStart = idx;
@@ -16743,7 +16743,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         case ScriptBaseClass.PRIM_TYPE:
                             if (remain < 3)
                                 return new LSL_List();
-                            code = (int)rules.GetLSLIntegerItem(idx++);
+                            code = (int)rules.GetIntegerItem(idx++);
                             remain = rules.Length - idx;
                             switch (code)
                             {
@@ -16835,7 +16835,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             int idx = 0;
             while (idx < rules.Length)
             {
-                int code = (int)rules.GetLSLIntegerItem(idx++);
+                int code = rules.GetIntegerItem(idx++);
                 int remain = rules.Length - idx;
 
                 switch (code)
@@ -16902,7 +16902,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         if (remain < 1)
                             return new LSL_List();
 
-                        int face = (int)rules.GetLSLIntegerItem(idx++);
+                        int face = rules.GetIntegerItem(idx++);
                         if (face == ScriptBaseClass.ALL_SIDES)
                         {
                             for (face = 0; face < 21; face++)
@@ -16929,7 +16929,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         if (remain < 1)
                             return new LSL_List();
 
-                        face = (int)rules.GetLSLIntegerItem(idx++);
+                        face = rules.GetIntegerItem(idx++);
 
                         if (face == ScriptBaseClass.ALL_SIDES)
                         {
@@ -16949,7 +16949,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                     case ScriptBaseClass.PRIM_BUMP_SHINY:
                         if (remain < 1)
                             return new LSL_List();
-                        face = (int)rules.GetLSLIntegerItem(idx++);
+                        face = rules.GetIntegerItem(idx++);
 
                         if (face == ScriptBaseClass.ALL_SIDES)
                         {
@@ -16969,7 +16969,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                     case ScriptBaseClass.PRIM_FULLBRIGHT:
                         if (remain < 1)
                             return new LSL_List();
-                        face = (int)rules.GetLSLIntegerItem(idx++);
+                        face = rules.GetIntegerItem(idx++);
 
                         if (face == ScriptBaseClass.ALL_SIDES)
                         {
@@ -16998,7 +16998,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         // (PRIM_TEXGEN_DEFAULT, PRIM_TEXGEN_PLANAR)
                         if (remain < 1)
                             return new LSL_List();
-                        face = (int)rules.GetLSLIntegerItem(idx++);
+                        face = rules.GetIntegerItem(idx++);
 
                         if (face == ScriptBaseClass.ALL_SIDES)
                         {
@@ -17024,7 +17024,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                     case ScriptBaseClass.PRIM_GLOW:
                         if (remain < 1)
                             return new LSL_List();
-                        face = (int)rules.GetLSLIntegerItem(idx++);
+                        face = rules.GetIntegerItem(idx++);
 
                         if (face == ScriptBaseClass.ALL_SIDES)
                         {
@@ -17351,7 +17351,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 return new LSL_List();
             char first = ((string)json)[0];
 
-            if(first != '[' && first !='{') 
+            if(first != '[' && first !='{')
             {
                 // we already have a single element
                 LSL_List l = new();
@@ -17385,7 +17385,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             LSL_List retl = new();
             if(elem is null)
                 retl.Add((LSL_String)ScriptBaseClass.JSON_NULL);
-                
+
             LitJson.JsonType elemType = elem.GetJsonType();
             switch (elemType)
             {
@@ -17503,7 +17503,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                     return  "\"Inf\"";
                 if(double.IsNaN(float_val))
                     return  "\"NaN\"";
-               
+
                 return ((LSL_Float)float_val).ToString();
             }
             if (o is LSL_Integer LSL_Integero)
@@ -17724,7 +17724,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                     newData.SetJsonType(LitJson.JsonType.Array);
                     newData.Add(JsonBuildRestOfSpec(specifiers, level + 1, val));
                     return newData;
-                }              
+                }
             }
             else
             {
