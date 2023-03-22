@@ -9,10 +9,6 @@
     <Copyright>OpenSimulator developers</Copyright>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NDesk.Options">
-      <HintPath>..\..\..\bin\NDesk.Options.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="OpenMetaverse">
       <HintPath>..\..\..\bin\OpenMetaverse.dll</HintPath>
       <Private>False</Private>
@@ -45,11 +41,6 @@
     <ProjectReference Include="..\..\Services\Interfaces\OpenSim.Services.Interfaces.csproj" />
     <ProjectReference Include="..\..\Services\UserAccountService\OpenSim.Services.UserAccountService.csproj" />
   </ItemGroup>
-    <ItemGroup>
-	    <Content Include="$(SolutionDir)\bin\**">
-		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	    </Content>
-    </ItemGroup>
   <ItemGroup>
 	<Content Include="Resources/OpenSim.addin.xml">
 	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -64,5 +55,6 @@
     <PackageReference Include="Mono.Addins" Version="1.4.1" />
 	<PackageReference Include="Mono.Addins.Setup" Version="1.4.1" />
 	<PackageReference Include="nini-core" Version="0.9.2.16" />
+	<PackageReference Include="NDesk.Options.Core" Version="1.2.5" />
   </ItemGroup>
 </Project>

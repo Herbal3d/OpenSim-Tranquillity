@@ -7,10 +7,6 @@
     <Copyright>Copyright ©  2012</Copyright>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NDesk.Options">
-      <HintPath>..\..\..\bin\NDesk.Options.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="netcd">
       <HintPath>..\..\..\bin\netcd.dll</HintPath>
       <Private>False</Private>
@@ -60,6 +56,7 @@
     <PackageReference Include="log4net" Version="2.0.15" />
     <PackageReference Include="Mono.Addins" Version="1.4.1" />
     <PackageReference Include="nini-core" Version="0.9.2.16" />
+	<PackageReference Include="NDesk.Options.Core" Version="1.2.5" />
     <PackageReference Include="System.Data.SQLite" Version="1.0.117" />
     <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
   </ItemGroup>

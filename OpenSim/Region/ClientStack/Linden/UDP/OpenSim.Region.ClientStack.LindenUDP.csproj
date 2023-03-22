@@ -8,14 +8,6 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="C5">
-      <HintPath>..\..\..\..\..\bin\C5.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="NDesk.Options">
-      <HintPath>..\..\..\..\..\bin\NDesk.Options.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="OpenMetaverse">
       <HintPath>..\..\..\..\..\bin\OpenMetaverse.dll</HintPath>
       <Private>False</Private>
@@ -48,8 +40,10 @@
     <Compile Remove="Tests\obj\Debug\.NETFramework,Version=v4.8.AssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="C5" Version="2.5.3" />
     <PackageReference Include="log4net" Version="2.0.15" />
     <PackageReference Include="Mono.Addins" Version="1.4.1" />
+    <PackageReference Include="NDesk.Options.Core" Version="1.2.5" />
     <PackageReference Include="nini-core" Version="0.9.2.16" />
   </ItemGroup>
 </Project>
