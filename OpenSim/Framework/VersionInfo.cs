@@ -31,8 +31,8 @@ namespace OpenSim
 {
     public class VersionInfo
     {
-        public const string VersionNumber = "0.9.2.2";
-        public const string AssemblyVersionNumber = "0.9.2.2";
+        public const string VersionNumber = "0.9.3.0";
+        public const string AssemblyVersionNumber = "0.9.3.0";
         public const string Release = "8451";
 
         public const Flavour VERSION_FLAVOUR = Flavour.Dev;
@@ -56,11 +56,8 @@ namespace OpenSim
 
         public static string GetVersionString(string versionNumber, string release, Flavour flavour)
         {
-            string versionString = $"OpenSim-NGC {versionNumber}.{release} Yeti {flavour}";
-            return versionString.PadRight(VERSIONINFO_VERSION_LENGTH);
+            return $"OpenSim-NGC {versionNumber}.{release} Nessie {flavour}";
         }
-
-        public const int VERSIONINFO_VERSION_LENGTH = 48;
 
         /// <summary>
         /// This rules versioning regarding teleports, and compatibility between simulators in that regard.
