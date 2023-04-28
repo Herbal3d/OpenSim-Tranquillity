@@ -4574,66 +4574,60 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             }
 
             TaskInventoryItem item = m_host.Inventory.GetInventoryItem(inventory);
-            if (item == null)
+            if (item is null)
             {
                 Error("llGiveInventory", "Can't find inventory object '" + inventory + "'");
                 return;
             }
 
-            UUID objId = item.ItemID;
-
             // check if destination is an object
-            if (World.GetSceneObjectPart(destId) != null)
+            if (World.GetSceneObjectPart(destId) is not null)
             {
                 // destination is an object
-                World.MoveTaskInventoryItem(destId, m_host, objId);
+                World.MoveTaskInventoryItem(destId, m_host, item.ItemID);
+                return;
             }
-            else
+
+            ScenePresence presence = World.GetScenePresence(destId);
+            if (presence is null)
             {
-                ScenePresence presence = World.GetScenePresence(destId);
-
-                if (presence == null)
+                UserAccount account = m_userAccountService.GetUserAccount(RegionScopeID, destId);
+                if (account is null)
                 {
-                    UserAccount account = m_userAccountService.GetUserAccount(RegionScopeID, destId);
-
-                    if (account == null)
+                    GridUserInfo info = World.GridUserService.GetGridUserInfo(destId.ToString());
+                    if(info is null || info.Online == false)
                     {
-                        GridUserInfo info = World.GridUserService.GetGridUserInfo(destId.ToString());
-                        if(info == null || info.Online == false)
-                        {
-                            Error("llGiveInventory", "Can't find destination '" + destId.ToString() + "'");
-                            return;
-                        }
+                        Error("llGiveInventory", "Can't find destination '" + destId.ToString() + "'");
+                        return;
                     }
                 }
-
-                // destination is an avatar
-                InventoryItemBase agentItem = World.MoveTaskInventoryItem(destId, UUID.Zero, m_host, objId, out string message);
-
-                if (agentItem == null)
-                {
-                    llSay(0, message);
-                    return;
-                }
-
-                byte[] bucket = new byte[1];
-                bucket[0] = (byte)item.Type;
-
-                GridInstantMessage msg = new(World, m_host.OwnerID, m_host.Name, destId,
-                        (byte)InstantMessageDialog.TaskInventoryOffered,
-                        m_host.OwnerID.Equals(m_host.GroupID), "'"+item.Name+"'. ("+m_host.Name+" is located at "+
-                        m_regionName + " "+ m_host.AbsolutePosition.ToString() + ")",
-                        agentItem.ID, true, m_host.AbsolutePosition,
-                        bucket, true);
-
-                if (World.TryGetScenePresence(destId, out ScenePresence sp))
-                    sp.ControllingClient.SendInstantMessage(msg);
-                else
-                    m_TransferModule?.SendInstantMessage(msg, delegate(bool success) {});
-
-                //This delay should only occur when giving inventory to avatars.
-                ScriptSleep(m_sleepMsOnGiveInventory);
             }
+
+            // destination is an avatar
+            InventoryItemBase agentItem = World.MoveTaskInventoryItem(destId, UUID.Zero, m_host, item.ItemID, out string message);
+            if (agentItem is null)
+            {
+                llSay(0, message);
+                return;
+            }
+
+            byte[] bucket = new byte[1];
+            bucket[0] = (byte)item.Type;
+
+            GridInstantMessage msg = new(World, m_host.OwnerID, m_host.Name, destId,
+                    (byte)InstantMessageDialog.TaskInventoryOffered,
+                    m_host.OwnerID.Equals(m_host.GroupID), "'"+item.Name+"'. ("+m_host.Name+" is located at "+
+                    m_regionName + " "+ m_host.AbsolutePosition.ToString() + ")",
+                    agentItem.ID, true, m_host.AbsolutePosition,
+                    bucket, true);
+
+            if (World.TryGetScenePresence(destId, out ScenePresence sp))
+                sp.ControllingClient.SendInstantMessage(msg);
+            else
+                m_TransferModule?.SendInstantMessage(msg, delegate(bool success) {});
+
+            //This delay should only occur when giving inventory to avatars.
+            ScriptSleep(m_sleepMsOnGiveInventory);
         }
 
         [DebuggerNonUserCode]
@@ -5413,6 +5407,11 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             return src.Sort(stride, ascending == 1);
         }
 
+        public LSL_List llListSortStrided(LSL_List src, int stride, int stride_index, int ascending)
+        {
+            return src.Sort(stride, stride_index, ascending == 1);
+        }
+
         public LSL_Integer llGetListLength(LSL_List src)
         {
             return src.Length;
@@ -5588,8 +5587,12 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         public LSL_Integer llGetListEntryType(LSL_List src, int index)
         {
             if (index < 0)
+            {
                 index = src.Length + index;
-            if (index >= src.Length || index < 0)
+                if (index < 0)
+                    return 0;
+            }
+            else if (index >= src.Length)
                 return 0;
 
             object o = src.Data[index];
@@ -5598,16 +5601,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if (o is LSL_Float || o is Single || o is Double)
                 return 2;
             if (o is LSL_String || o is String)
-            {
-                if (UUID.TryParse(o.ToString(), out UUID _))
-                {
-                    return 4;
-                }
-                else
-                {
-                    return 3;
-                }
-            }
+                return UUID.TryParse(o.ToString(), out UUID _) ? 4 : 3;
             if (o is LSL_Key)
                 return 4;
             if (o is LSL_Vector)
@@ -5759,97 +5753,133 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             return result;
         }
 
-        /// <summary>
-        /// Elements in the source list starting with 0 and then
-        /// every i+stride. If the stride is negative then the scan
-        /// is backwards producing an inverted result.
-        /// Only those elements that are also in the specified
-        /// range are included in the result.
-        /// </summary>
+
 
         public LSL_List llList2ListStrided(LSL_List src, int start, int end, int stride)
         {
-            LSL_List result = new();
-            int[] si = new int[2];
-            int[] ei = new int[2];
-            bool twopass = false;
-
-
-            //  First step is always to deal with negative indices
-
             if (start < 0)
-                start = src.Length+start;
-            if (end   < 0)
-                end   = src.Length+end;
-
-            //  Out of bounds indices are OK, just trim them
-            //  accordingly
-
-            if (start > src.Length)
-                start = src.Length;
-
-            if (end > src.Length)
-                end = src.Length;
-
-            if (stride == 0)
-                stride = 1;
-
-            //  There may be one or two ranges to be considered
-
-            if (start != end)
             {
+                start += src.Length;
+                if (start < 0)
+                    start = 0;
+            }
+            if (end < 0)
+            {
+                end += src.Length;
+                if (end < 0)
+                    end = 0;
+            }
 
-                if (start <= end)
-                {
-                   si[0] = start;
-                   ei[0] = end;
-                }
-                else
-                {
-                   si[1] = start;
-                   ei[1] = src.Length;
-                   si[0] = 0;
-                   ei[0] = end;
-                   twopass = true;
-                }
-
-                //  The scan always starts from the beginning of the
-                //  source list, but members are only selected if they
-                //  fall within the specified sub-range. The specified
-                //  range values are inclusive.
-                //  A negative stride reverses the direction of the
-                //  scan producing an inverted list as a result.
-
-                if (stride > 0)
-                {
-                    for (int i = 0; i < src.Length; i += stride)
-                    {
-                        if (i<=ei[0] && i>=si[0])
-                            result.Add(src.Data[i]);
-                        if (twopass && i>=si[1] && i<=ei[1])
-                            result.Add(src.Data[i]);
-                    }
-                }
-                else if (stride < 0)
-                {
-                    for (int i = src.Length - 1; i >= 0; i += stride)
-                    {
-                        if (i <= ei[0] && i >= si[0])
-                            result.Add(src.Data[i]);
-                        if (twopass && i >= si[1] && i <= ei[1])
-                            result.Add(src.Data[i]);
-                    }
-                }
+            if (start > end)
+            {
+                start = 0;
+                end = src.Length - 1;
             }
             else
             {
-                if (start%stride == 0)
-                {
-                    result.Add(src.Data[start]);
-                }
+                if (start >= src.Length)
+                    return new LSL_List();
+                if (end >= src.Length)
+                    end = src.Length - 1;
             }
 
-            return result;
+            if (stride < 1)
+                stride = 1;
+
+            int size;
+            if (stride > 1)
+            {
+                if (start > 0)
+                {
+                    int sst = start / stride;
+                    sst *= stride;
+                    if (sst != start)
+                        start = sst + stride;
+
+                    if (start > end)
+                        return new LSL_List();
+                }
+                size = end - start + 1;
+                int sz = size / stride;
+                if (sz * stride < size)
+                    sz++;
+                size = sz;
+            }
+            else
+                size = end - start + 1;
+
+            object[] res = new object[size];
+            int j = 0;
+            for (int i = start; i <= end; i += stride, j++)
+                res[j] = src.Data[i];
+
+            return new LSL_List(res);
+        }
+
+        public LSL_List llList2ListSlice(LSL_List src, int start, int end, int stride, int stride_index)
+        {
+            if (start < 0)
+            {
+                start += src.Length;
+                if (start < 0)
+                    start = 0;
+            }
+            if (end < 0)
+            {
+                end += src.Length;
+                if (end < 0)
+                    end = 0;
+            }
+            if (start > end)
+            {
+                start = 0;
+                end = src.Length - 1;
+            }
+            else
+            {
+                if (start >= src.Length)
+                    return new LSL_List();
+                if (end >= src.Length)
+                    end = src.Length - 1;
+            }
+            if (stride < 1)
+                stride = 1;
+            if (stride_index < 0)
+            {
+                stride_index += stride;
+                if (stride_index < 0)
+                    return new LSL_List();
+            }
+            else if (stride_index >= stride)
+                return new LSL_List();
+            int size;
+            if (stride > 1)
+            {
+                if (start > 0)
+                {
+                    int sst = start / stride;
+                    sst *= stride;
+                    if (sst != start)
+                        start = sst + stride;
+                    if (start > end)
+                        return new LSL_List();
+                }
+                start += stride_index;
+                size = end - start + 1;
+                int sz = size / stride;
+                if (sz * stride < size)
+                    sz++;
+                size = sz;
+            }
+            else
+                size = end - start + 1;
+            object[] res = new object[size];
+            int j = 0;
+            for (int i = start; i <= end; i += stride, j++)
+                res[j] = src.Data[i];
+
+            //m_log.Debug($" test {size} {j}");
+            return new LSL_List(res);
         }
 
         public LSL_Integer llGetRegionAgentCount()
@@ -7385,20 +7415,16 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             foreach (object item in inventory.Data)
             {
                 string rawItemString = item.ToString();
-                TaskInventoryItem taskItem = null;
+                TaskInventoryItem taskItem = (UUID.TryParse(rawItemString, out UUID itemID)) ?
+                    m_host.Inventory.GetInventoryItem(itemID) : m_host.Inventory.GetInventoryItem(rawItemString);
 
-                if (UUID.TryParse(rawItemString, out UUID itemID))
-                    taskItem = m_host.Inventory.GetInventoryItem(itemID);
-                else
-                    taskItem = m_host.Inventory.GetInventoryItem(rawItemString);
-
-                if(taskItem == null)
+                if(taskItem is null)
                     continue;
 
                 if ((taskItem.CurrentPermissions & (uint)PermissionMask.Copy) == 0)
                     continue;
 
-                if (destSop != null)
+                if (destSop is not null)
                 {
                     if(!World.Permissions.CanDoObjectInvToObjectInv(taskItem, m_host, destSop))
                         continue;
@@ -7431,7 +7457,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 return;
             }
 
-            if (destSop != null)
+            if (destSop is not null)
             {
                 ScriptSleep(100);
                 return;
@@ -13982,6 +14008,11 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if (parcel is null)
                 return new LSL_List(0);
 
+            return GetParcelDetails(parcel, param);
+        }
+
+        public LSL_List GetParcelDetails(ILandObject parcel, LSL_List param)
+        {
             LandData land = parcel.LandData;
             if (land is null)
                 return new LSL_List(0);
@@ -13989,59 +14020,68 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             LSL_List ret = new();
             foreach (object o in param.Data)
             {
-                switch (o.ToString())
+                if (o is not LSL_Integer io)
                 {
-                    case "0":
+                    Error("GetParcelDetails", $"Unknown parameter {o}");
+                    return new LSL_List(0);
+                }
+
+                switch (io.value)
+                {
+                    case ScriptBaseClass.PARCEL_DETAILS_NAME:
                         ret.Add(new LSL_String(land.Name));
                         break;
-                    case "1":
+                    case ScriptBaseClass.PARCEL_DETAILS_DESC:
                         ret.Add(new LSL_String(land.Description));
                         break;
-                    case "2":
+                    case ScriptBaseClass.PARCEL_DETAILS_OWNER:
                         ret.Add(new LSL_Key(land.OwnerID.ToString()));
                         break;
-                    case "3":
+                    case ScriptBaseClass.PARCEL_DETAILS_GROUP:
                         ret.Add(new LSL_Key(land.GroupID.ToString()));
                         break;
-                    case "4":
+                    case ScriptBaseClass.PARCEL_DETAILS_AREA:
                         ret.Add(new LSL_Integer(land.Area));
                         break;
-                    case "5":
+                    case ScriptBaseClass.PARCEL_DETAILS_ID:
                         ret.Add(new LSL_Key(land.GlobalID.ToString()));
                         break;
-                    case "6":
+                    case ScriptBaseClass.PARCEL_DETAILS_SEE_AVATARS:
                         ret.Add(new LSL_Integer(land.SeeAVs ? 1 : 0));
                         break;
-                    case "7":
+                    case ScriptBaseClass.PARCEL_DETAILS_PRIM_CAPACITY:
                         ret.Add(new LSL_Integer(parcel.GetParcelMaxPrimCount()));
                         break;
-                    case "8":
+                    case 8:
                         ret.Add(new LSL_Integer(parcel.PrimCounts.Total));
                         break;
-                    case "9":
+                    case ScriptBaseClass.PARCEL_DETAILS_LANDING_POINT:
                         ret.Add(new LSL_Vector(land.UserLocation));
                         break;
-                    case "10":
+                    case ScriptBaseClass.PARCEL_DETAILS_LANDING_LOOKAT:
                         ret.Add(new LSL_Vector(land.UserLookAt));
                         break;
-                    case "11":
+                    case ScriptBaseClass.PARCEL_DETAILS_TP_ROUTING:
                         ret.Add(new LSL_Integer(land.LandingType));
                         break;
-                    case "12":
+                    case ScriptBaseClass.PARCEL_DETAILS_FLAGS:
                         ret.Add(new LSL_Integer(land.Flags));
                         break;
-                    case "13":
-                        ret.Add(new LSL_Integer(World.LSLScriptDanger(m_host, pos) ? 1 : 0));
+                    case ScriptBaseClass.PARCEL_DETAILS_SCRIPT_DANGER:
+                        ret.Add(new LSL_Integer(World.LSLScriptDanger(m_host, parcel) ? 1 : 0));
                         break;
-                    case "64":
+                    case ScriptBaseClass.PARCEL_DETAILS_DWELL:
                         ret.Add(new LSL_Integer(land.Dwell));
                         break;
-                    case "65":
+                    case ScriptBaseClass.PARCEL_DETAILS_GETCLAIMDATE:
                         ret.Add(new LSL_Integer(land.ClaimDate));
                         break;
-                    default:
-                        ret.Add(new LSL_Integer(0));
+                    case ScriptBaseClass.PARCEL_DETAILS_GEOMETRICCENTER:
+                        ret.Add(new LSL_Vector(parcel.CenterPoint.X, parcel.CenterPoint.Y, 0));
                         break;
+                    default:
+                        Error("GetParcelDetails", $"Unknown parameter {io.value}");
+                        return new LSL_List(0);
                 }
             }
             return ret;
@@ -18241,6 +18281,17 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 return src;
             }
         }
+
+        public LSL_Vector llLinear2sRGB(LSL_Vector src)
+        {
+            return new LSL_Vector(Util.LinearTosRGB((float)src.x), Util.LinearTosRGB((float)src.y), Util.LinearTosRGB((float)src.z));
+        }
+
+        public LSL_Vector llsRGB2Linear(LSL_Vector src)
+        {
+            return new LSL_Vector(Util.sRGBtoLinear((float)src.x), Util.sRGBtoLinear((float)src.y), Util.sRGBtoLinear((float)src.z));
+        }
+
     }
 
     public class NotecardCache

@@ -5996,5 +5996,143 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         {
             src.SortInPlace(stride, ascending == 1);
         }
+
+        public void osListSortInPlaceStrided(LSL_List src, LSL_Integer stride, LSL_Integer stride_index, LSL_Integer ascending)
+        {
+            src.SortInPlace(stride, stride_index, ascending == 1);
+        }
+
+        public LSL_List osGetParcelDetails(LSL_Key id, LSL_List param)
+        {
+            if (!UUID.TryParse(id, out UUID parcelID))
+                return new LSL_List(0);
+
+            InitLSL();
+            if (m_LSL_Api is null)
+                return new LSL_List(0);
+
+            ILandObject parcel = World.LandChannel.GetLandObject(parcelID);
+            if (parcel is null)
+                return new LSL_List(0);
+
+            return m_LSL_Api.GetParcelDetails(parcel, param);
+        }
+
+        public LSL_List osGetParcelIDs()
+        {
+            //if(!World.Permissions.IsEstateManager(m_host.OwnerID))
+            //    return new LSL_List();
+
+            List<ILandObject> parcels = World.LandChannel.AllParcels();
+            if (parcels is null || parcels.Count == 0)
+                return new LSL_List();
+            LSL_List ret = new();
+            foreach (ILandObject obj in parcels)
+            {
+                // some sanity check
+                if(obj.GlobalID.IsZero())
+                    continue;
+                if(obj.LandData is null || obj.LandData.Area == 0)
+                    continue;
+                ret.Add(new LSL_Key(obj.GlobalID.ToString()));
+            }
+            return ret;
+        }
+        public LSL_Key osGetParcelID()
+        {
+            ILandObject parcel = World.LandChannel.GetLandObject(m_host.AbsolutePosition);
+            return parcel is null ? ScriptBaseClass.NULL_KEY : new LSL_Key(parcel.GlobalID.ToString());
+        }
+
+        // old List2ListStrided for compatibility
+        /// <summary>
+        /// Elements in the source list starting with 0 and then
+        /// every i+stride. If the stride is negative then the scan
+        /// Only those elements that are also in the specified
+        /// range are included in the result.
+        /// </summary>
+
+        public LSL_List osOldList2ListStrided(LSL_List src, int start, int end, int stride)
+        {
+            LSL_List result = new();
+            int[] si = new int[2];
+            int[] ei = new int[2];
+            bool twopass = false;
+
+            //  First step is always to deal with negative indices
+
+            if (start < 0)
+                start += src.Length;
+            if (end   < 0)
+                end += src.Length;
+
+            //  Out of bounds indices are OK, just trim them
+            //  accordingly
+
+            if (start > src.Length)
+                start = src.Length;
+
+            if (end > src.Length)
+                end = src.Length;
+
+            if (stride == 0)
+                stride = 1;
+
+            //  There may be one or two ranges to be considered
+
+            if (start != end)
+            {
+                if (start <= end)
+                {
+                   si[0] = start;
+                   ei[0] = end;
+                }
+                else
+                {
+                   si[1] = start;
+                   ei[1] = src.Length;
+                   si[0] = 0;
+                   ei[0] = end;
+                   twopass = true;
+                }
+
+                //  The scan always starts from the beginning of the
+                //  source list, but members are only selected if they
+                //  fall within the specified sub-range. The specified
+                //  range values are inclusive.
+                //  A negative stride reverses the direction of the
+                //  scan producing an inverted list as a result.
+
+                if (stride > 0)
+                {
+                    for (int i = 0; i < src.Length; i += stride)
+                    {
+                        if (i<=ei[0] && i>=si[0])
+                            result.Add(src.Data[i]);
+                        if (twopass && i>=si[1] && i<=ei[1])
+                            result.Add(src.Data[i]);
+                    }
+                }
+                else if (stride < 0)
+                {
+                    for (int i = src.Length - 1; i >= 0; i += stride)
+                    {
+                        if (i <= ei[0] && i >= si[0])
+                            result.Add(src.Data[i]);
+                        if (twopass && i >= si[1] && i <= ei[1])
+                            result.Add(src.Data[i]);
+                    }
+                }
+            }
+            else
+            {
+                if (start%stride == 0)
+                {
+                    result.Add(src.Data[start]);
+                }
+            }
+
+            return result;
+        }
     }
 }
