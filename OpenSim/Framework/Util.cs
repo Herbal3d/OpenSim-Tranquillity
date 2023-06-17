@@ -55,6 +55,7 @@ using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using Amib.Threading;
 using System.Collections.Concurrent;
+using System.Net.Http;
 
 namespace OpenSim.Framework
 {
@@ -422,7 +423,7 @@ namespace OpenSim.Framework
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong RegionWorldLocToHandle(uint X, uint Y)
         {
-            ulong handle = X & 0xffffff00; // make sure it matchs grid coord points.
+            ulong handle = X & 0xffffff00; // make sure it matches grid coord points.
             handle <<= 32; // to higher half
             handle |= (Y & 0xffffff00);
             return handle;
@@ -2172,6 +2173,7 @@ namespace OpenSim.Framework
             return ms;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static XmlRpcResponse XmlRpcCommand(string url, string methodName, params object[] args)
         {
             return SendXmlRpcCommand(url, methodName, args);
@@ -2179,8 +2181,9 @@ namespace OpenSim.Framework
 
         public static XmlRpcResponse SendXmlRpcCommand(string url, string methodName, object[] args)
         {
-            XmlRpcRequest client = new(methodName, args);
-            return client.Send(url, 6000);
+            XmlRpcRequest xmlclient = new(methodName, args);
+            using HttpClient hclient = WebUtil.GetNewGlobalHttpClient(10000);
+            return xmlclient.Send(url, hclient);
         }
 
         /// <summary>

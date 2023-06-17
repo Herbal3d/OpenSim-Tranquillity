@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using Nini.Config;
 
@@ -40,6 +41,7 @@ using OpenSim.Services.Interfaces;
 using OpenSim.Server.Base;
 using OpenMetaverse;
 using System.Text;
+using System.Threading;
 
 namespace OpenSim.Services.Connectors
 {
@@ -60,7 +62,7 @@ namespace OpenSim.Services.Connectors
         /// <remarks>
         /// In this case, -1 is default timeout (100 seconds), not infinite.
         /// </remarks>
-        private int m_requestTimeoutSecs = -1;
+        private int m_requestTimeout = -1;
         private readonly string m_configName = "InventoryService";
 
         private const double CACHE_EXPIRATION_SECONDS = 30.0;
@@ -112,7 +114,7 @@ namespace OpenSim.Services.Connectors
             else
                 m_InventoryURL = serviceURI + "/xinventory";
 
-            m_requestTimeoutSecs = config.GetInt("RemoteRequestTimeout", m_requestTimeoutSecs);
+             m_requestTimeout = 1000 * config.GetInt("RemoteRequestTimeout", -1);
 
             StatsManager.RegisterStat(
                 new Stat(
@@ -747,54 +749,53 @@ namespace OpenSim.Services.Connectors
         {
             if (WebUtil.DebugLevel >= 3)
                 m_log.Debug($"[XInventory]: HTTP OUT SynchronousRestForms POST to {m_InventoryURL}");
-
-            int tickstart = Util.EnvironmentTickCount();
-
-            HttpWebRequest request;
-            try
+            if (string.IsNullOrEmpty(obj))
             {
-                request = (HttpWebRequest)WebRequest.Create(m_InventoryURL);
-                request.Method = "POST";
-                if (m_requestTimeoutSecs > 0)
-                    request.Timeout = m_requestTimeoutSecs * 1000;
-                if (m_Auth is not null)
-                    m_Auth.AddAuthorization(request.Headers);
-
-                request.AllowWriteStreamBuffering = false;
-                request.ContentType = "application/x-www-form-urlencoded";
-            }
-            catch (Exception e)
-            {
-                m_log.Info($"[XInventory]: Error creating POST request to {m_InventoryURL}: {e.Message}");
-                throw;
-            }
-
-            int sendlen;
-            try
-            {
-                byte[] data = Util.UTF8NBGetbytes(obj);
-                sendlen = data.Length;
-                request.ContentLength = sendlen;
-
-                using (Stream requestStream = request.GetRequestStream())
-                    requestStream.Write(data, 0, sendlen);
-                data = null;
-            }
-            catch (Exception e)
-            {
-                m_log.Info($"[XInventory]: Error sending POST request to {m_InventoryURL}: {e.Message}");
-                throw;
+                m_log.Warn($"[XInventory]: empty post data");
+                return new Dictionary<string, object>();
             }
 
             Dictionary<string, object> respDic = null;
+            int ticks = Util.EnvironmentTickCount();
+            int sendlen = 0;
             int rcvlen = 0;
+            HttpResponseMessage responseMessage = null;
+            HttpRequestMessage request = null;
+            HttpClient client = null;
             try
             {
-                using WebResponse resp = request.GetResponse();
-                if (resp.ContentLength != 0)
+                client = WebUtil.GetNewGlobalHttpClient(m_requestTimeout);
+
+                request = new(HttpMethod.Post, m_InventoryURL);
+
+                m_Auth?.AddAuthorization(request.Headers);
+
+                //if (keepalive)
                 {
-                    rcvlen = (int)resp.ContentLength;
-                    respDic = ServerUtils.ParseXmlResponse(resp.GetResponseStream());
+                    request.Headers.TryAddWithoutValidation("Keep-Alive", "timeout=30, max=10");
+                    request.Headers.TryAddWithoutValidation("Connection", "Keep-Alive");
+                    request.Headers.ConnectionClose = false;
+                }
+                //else
+                //    request.Headers.TryAddWithoutValidation("Connection", "close");
+
+                request.Headers.ExpectContinue = false;
+                request.Headers.TransferEncodingChunked = false;
+
+                byte[] data = Util.UTF8NBGetbytes(obj);
+                sendlen = data.Length;
+
+                request.Content = new ByteArrayContent(data);
+                request.Content.Headers.TryAddWithoutValidation("Content-Type", "application/x-www-form-urlencoded");
+                request.Content.Headers.TryAddWithoutValidation("Content-Length", sendlen.ToString());
+
+                responseMessage = client.Send(request, HttpCompletionOption.ResponseHeadersRead);
+                responseMessage.EnsureSuccessStatusCode();
+
+                if ((responseMessage.Content.Headers.ContentLength is long contentLength) && contentLength != 0)
+                {
+                    rcvlen = (int)contentLength;
+                    respDic = ServerUtils.ParseXmlResponse(responseMessage.Content.ReadAsStream());
                 }
             }
             catch (Exception e)
@@ -802,11 +803,17 @@ namespace OpenSim.Services.Connectors
                 m_log.Info($"[XInventory]: Error receiving response from {m_InventoryURL}: {e.Message}");
                 throw;
             }
-
-            int tickdiff = Util.EnvironmentTickCountSubtract(tickstart);
-            if (tickdiff > WebUtil.LongCallTime)
+            finally
             {
-                m_log.Info($"[XInventory]: POST {m_InventoryURL} took {tickdiff}ms {sendlen}/{rcvlen}bytes");
+                request?.Dispose();
+                responseMessage?.Dispose();
+                client?.Dispose();
+            }
+
+            ticks = Util.EnvironmentTickCountSubtract(ticks);
+            if (ticks > WebUtil.LongCallTime)
+            {
+                m_log.Info($"[XInventory]: POST {m_InventoryURL} took {ticks}ms {sendlen}/{rcvlen}bytes");
             }
 
             return respDic ?? new Dictionary<string, object>();

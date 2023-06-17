@@ -70,6 +70,7 @@ using PresenceInfo = OpenSim.Services.Interfaces.PresenceInfo;
 using PrimType = OpenSim.Region.Framework.Scenes.PrimType;
 using RegionFlags = OpenSim.Framework.RegionFlags;
 using RegionInfo = OpenSim.Framework.RegionInfo;
+using System.Runtime.CompilerServices;
 
 #pragma warning disable IDE1006
 
@@ -2899,39 +2900,54 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 return;
 
             UUID soundID = ScriptUtils.GetAssetIdFromKeyOrItemName(m_host, sound, AssetType.Sound);
-            if(soundID.IsZero())
-                return;
-
-            // send the sound, once, to all clients in range
-            m_SoundModule.SendSound(m_host.UUID, soundID, volume, false, 0, false, false);
+            if(soundID.IsNotZero())
+                m_SoundModule.SendSound(m_host, soundID, volume, false, 0, false, false);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void llLinkPlaySound(LSL_Integer linknumber, string sound, double volume)
+        {
+            llLinkPlaySound(linknumber, sound, volume, 0);
+        }
+
+        public void llLinkPlaySound(LSL_Integer linknumber, string sound, double volume, LSL_Integer flags)
         {
             if (m_SoundModule is null)
                 return;
             if (m_host.ParentGroup is null || m_host.ParentGroup.IsDeleted)
                 return;
 
-            SceneObjectPart sop;
-            if (linknumber == ScriptBaseClass.LINK_THIS)
-                sop = m_host;
-            else if (linknumber < 0)
-                return;
-            else if (linknumber < 2)
-                sop = m_host.ParentGroup.RootPart;
-            else
-                sop = m_host.ParentGroup.GetLinkNumPart(linknumber);
-
-            if(sop == null)
-                return;
-
             UUID soundID = ScriptUtils.GetAssetIdFromKeyOrItemName(m_host, sound, AssetType.Sound);
             if (soundID.IsZero())
                 return;
 
-            // send the sound, once, to all clients in range
-            m_SoundModule.SendSound(sop.UUID, soundID, volume, false, 0, false, false);
+            List<SceneObjectPart> parts = GetLinkParts(m_host, linknumber.value);
+            if (parts.Count == 0)
+                return;
+
+            switch (flags)
+            {
+                case 0: // play
+                    foreach (SceneObjectPart sop in parts)
+                        m_SoundModule.SendSound(sop, soundID, volume, false, 0, false, false);
+                    break;
+                case 1: // loop
+                    foreach (SceneObjectPart sop in parts)
+                        m_SoundModule.LoopSound(sop, soundID, volume, false, false);
+                    break;
+                case 2: //trigger
+                foreach (SceneObjectPart sop in parts)
+                    m_SoundModule.SendSound(sop, soundID, volume, true, 0, false, false);
+                    break;
+                case 4: // play slave
+                    foreach (SceneObjectPart sop in parts)
+                        m_SoundModule.SendSound(sop, soundID, volume, false, 0, true, false);
+                    break;
+                case 5: // loop slave
+                    foreach (SceneObjectPart sop in parts)
+                        m_SoundModule.LoopSound(sop, soundID, volume, false, true);
+                    break;
+            }
         }
 
         public void llLoopSound(string sound, double volume)
@@ -2944,7 +2960,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if(soundID.IsZero())
                 return;
 
-            m_SoundModule.LoopSound(m_host.UUID, soundID, volume, false,false);
+            m_SoundModule.LoopSound(m_host, soundID, volume, false, false);
         }
 
         public void llLoopSoundMaster(string sound, double volume)
@@ -2956,7 +2972,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if(soundID.IsZero())
                 return;
 
-            m_SoundModule.LoopSound(m_host.UUID, soundID, volume, true, false);
+            m_SoundModule.LoopSound(m_host, soundID, volume, true, false);
         }
 
         public void llLoopSoundSlave(string sound, double volume)
@@ -2968,7 +2984,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if(soundID.IsZero())
                 return;
 
-            m_SoundModule.LoopSound(m_host.UUID, soundID, volume, false, true);
+            m_SoundModule.LoopSound(m_host, soundID, volume, false, true);
         }
 
         public void llPlaySoundSlave(string sound, double volume)
@@ -2981,7 +2997,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 return;
 
             // send the sound, once, to all clients in range
-            m_SoundModule.SendSound(m_host.UUID, soundID, volume, false, 0, true, false);
+            m_SoundModule.SendSound(m_host, soundID, volume, false, 0, true, false);
         }
 
         public void llTriggerSound(string sound, double volume)
@@ -2994,12 +3010,12 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 return;
 
             // send the sound, once, to all clients in rangeTrigger or play an attached sound in this part's inventory.
-            m_SoundModule.SendSound(m_host.UUID, soundID, volume, true, 0, false, false);
+            m_SoundModule.SendSound(m_host, soundID, volume, true, 0, false, false);
         }
 
         public void llStopSound()
         {
-            m_SoundModule?.StopSound(m_host.UUID);
+            m_SoundModule?.StopSound(m_host);
         }
 
         public void llLinkStopSound(LSL_Integer linknumber)
@@ -3007,7 +3023,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if (m_SoundModule is not null)
             {
                 foreach(SceneObjectPart sop in GetLinkParts(linknumber))
-                    m_SoundModule.StopSound(sop.UUID);
+                    m_SoundModule.StopSound(sop);
             }
         }
 
@@ -3020,7 +3036,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if(soundID.IsZero())
                 return;
 
-            m_SoundModule.PreloadSound(m_host.UUID, soundID);
+            m_SoundModule.PreloadSound(m_host, soundID);
             ScriptSleep(m_sleepMsOnPreloadSound);
         }
 
@@ -5436,6 +5452,8 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             {
                 if (item is LSL_Integer LSL_Integeritem)
                     return LSL_Integeritem;
+                if (item is int LSL_Intitem)
+                    return new LSL_Integer(LSL_Intitem);
                 if (item is LSL_Float LSL_Floatitem)
                     return new LSL_Integer(LSL_Floatitem.value);
                 return new LSL_Integer(item.ToString());
@@ -5461,11 +5479,10 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 return 0;
 
             // valid keys seem to get parsed as integers then converted to floats
-            if (item is LSL_Key)
+            if (item is LSL_Key lslk)
             {
-                string s = item.ToString();
-                if(UUID.TryParse(s, out UUID _))
-                    return Convert.ToDouble(new LSL_Integer(s).value);
+                if(UUID.TryParse(lslk.m_string, out UUID _))
+                    return Convert.ToDouble(new LSL_Integer(lslk.m_string).value);
                 // we can't do this because a string is also a LSL_Key for now :(
                 //else
                 //   return 0;
@@ -5473,10 +5490,12 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
             try
             {
-                if (item is LSL_Integer intitem)
-                    return new LSL_Float(intitem.value);
                 if (item is LSL_Float floatitem)
                     return floatitem;
+                if (item is LSL_Integer intitem)
+                    return new LSL_Float(intitem.value);
+                if (item is int LSL_Intitem)
+                    return new LSL_Float(LSL_Intitem);
                 if (item is LSL_String lstringitem)
                 {
                     Match m = Regex.Match(lstringitem.m_string, "^\\s*(-?\\+?[,0-9]+\\.?[0-9]*)");
@@ -6023,7 +6042,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
         }
 
-        private bool ListFind_areEqual(object l, object r)
+        private static bool ListFind_areEqual(object l, object r)
         {
             if (l is null || r is null)
                 return false;
@@ -7746,42 +7765,32 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if(!UUID.TryParse(avatar, out UUID key) || key.IsZero())
                 return;
 
-            ILandObject land = World.LandChannel.GetLandObject(m_host.AbsolutePosition);
-            if (World.Permissions.CanEditParcelProperties(m_host.OwnerID, land, GroupPowers.LandManagePasses, false))
+            ILandObject parcel = World.LandChannel.GetLandObject(m_host.AbsolutePosition);
+            if (World.Permissions.CanEditParcelProperties(m_host.OwnerID, parcel, GroupPowers.LandManagePasses, false))
             {
-                LandAccessEntry entry;
-
                 int expires = (hours != 0) ? Util.UnixTimeSinceEpoch() + (int)(3600.0 * hours) : 0;
-                int idx = land.LandData.ParcelAccessList.FindIndex(
-                        delegate(LandAccessEntry e)
-                        {
-                            if (e.Flags == AccessList.Access && e.AgentID.Equals(key))
-                                return true;
-                            return false;
-                        });
-
-                if (idx != -1)
+                LandData land = parcel.LandData;
+                foreach(LandAccessEntry e in land.ParcelAccessList)
                 {
-                    entry = land.LandData.ParcelAccessList[idx];
-                    if (entry.Expires == 0)
+                    if (e.Flags == AccessList.Access && e.AgentID.Equals(key))
+                    {
+                        if (e.Expires != 0 && expires > e.Expires)
+                        {
+                            e.Expires = expires;
+                            World.EventManager.TriggerLandObjectUpdated((uint)land.LocalID, parcel);
+                        }
                         return;
-                    if (expires != 0 && expires < entry.Expires)
-                        return;
-
-                    entry.Expires = expires;
-                    World.EventManager.TriggerLandObjectUpdated((uint)land.LandData.LocalID, land);
-                    return;
+                    }
                 }
 
-                entry = new LandAccessEntry
+                LandAccessEntry entry = new()
                 {
                     AgentID = key,
                     Flags = AccessList.Access,
                     Expires = expires
                 };
-
-                land.LandData.ParcelAccessList.Add(entry);
-                World.EventManager.TriggerLandObjectUpdated((uint)land.LandData.LocalID, land);
+                land.ParcelAccessList.Add(entry);
+                World.EventManager.TriggerLandObjectUpdated((uint)land.LocalID, parcel);
             }
             ScriptSleep(m_sleepMsOnAddToLandPassList);
         }
@@ -13314,43 +13323,35 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if (!UUID.TryParse(avatar, out UUID key) || key.IsZero())
                 return;
 
-            ILandObject land = World.LandChannel.GetLandObject(m_host.AbsolutePosition);
-            if (World.Permissions.CanEditParcelProperties(m_host.OwnerID, land, GroupPowers.LandManageBanned, false))
+            ILandObject parcel = World.LandChannel.GetLandObject(m_host.AbsolutePosition);
+            if (World.Permissions.CanEditParcelProperties(m_host.OwnerID, parcel, GroupPowers.LandManageBanned, false))
             {
-                LandAccessEntry entry;
                 int expires = (hours != 0) ? Util.UnixTimeSinceEpoch() + (int)(3600.0 * hours) : 0;
-
-                int idx = land.LandData.ParcelAccessList.FindIndex(
-                        delegate(LandAccessEntry e)
-                        {
-                            if (e.Flags == AccessList.Ban && e.AgentID.Equals(key))
-                                return true;
-                            return false;
-                        });
-
-                if (idx != -1)
+                LandData land = parcel.LandData;
+                foreach (LandAccessEntry e in land.ParcelAccessList)
                 {
-                    entry = land.LandData.ParcelAccessList[idx];
-                    if (entry.Expires == 0)
+                    if (e.Flags == AccessList.Ban && e.AgentID.Equals(key))
+                    {
+                        if (e.Expires != 0 && e.Expires < expires)
+                        {
+                            e.Expires = expires;
+                            World.EventManager.TriggerLandObjectUpdated((uint)land.LocalID, parcel);
+                        }
                         return;
-                    if (expires != 0 && expires < entry.Expires)
-                        return;
-
-                    entry.Expires = expires;
-                    World.EventManager.TriggerLandObjectUpdated((uint)land.LandData.LocalID, land);
-                    return;
+                    }
                 }
 
-                entry = new LandAccessEntry
+                LandAccessEntry entry = new()
                 {
                     AgentID = key,
                     Flags = AccessList.Ban,
                     Expires = expires
                 };
 
-                land.LandData.ParcelAccessList.Add(entry);
+                land.ParcelAccessList.Add(entry);
+                land.Flags |= (uint)ParcelFlags.UseBanList;
 
-                World.EventManager.TriggerLandObjectUpdated((uint)land.LandData.LocalID, land);
+                World.EventManager.TriggerLandObjectUpdated((uint)land.LocalID, parcel);
             }
             ScriptSleep(m_sleepMsOnAddToLandBanList);
         }
@@ -13360,21 +13361,19 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if (!UUID.TryParse(avatar, out UUID key) || key.IsZero())
                 return;
 
-            ILandObject land = World.LandChannel.GetLandObject(m_host.AbsolutePosition);
-            if (World.Permissions.CanEditParcelProperties(m_host.OwnerID, land, GroupPowers.LandManagePasses, false))
+            ILandObject parcel = World.LandChannel.GetLandObject(m_host.AbsolutePosition);
+            if (World.Permissions.CanEditParcelProperties(m_host.OwnerID, parcel, GroupPowers.LandManagePasses, false))
             {
-                int idx = land.LandData.ParcelAccessList.FindIndex(
-                        delegate(LandAccessEntry e)
-                        {
-                            if (e.Flags == AccessList.Access && e.AgentID.Equals(key))
-                                return true;
-                            return false;
-                        });
-
-                if (idx != -1)
+                LandData land = parcel.LandData;
+                for(int i = 0; i < land.ParcelAccessList.Count; ++i)
                 {
-                    land.LandData.ParcelAccessList.RemoveAt(idx);
-                    World.EventManager.TriggerLandObjectUpdated((uint)land.LandData.LocalID, land);
+                    LandAccessEntry e = land.ParcelAccessList[i];
+                    if (e.Flags == AccessList.Access && e.AgentID.Equals(key))
+                    {
+                        land.ParcelAccessList.RemoveAt(i);
+                        World.EventManager.TriggerLandObjectUpdated((uint)land.LocalID, parcel);
+                        break;
+                    }
                 }
             }
             ScriptSleep(m_sleepMsOnRemoveFromLandPassList);
@@ -13385,21 +13384,19 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if (!UUID.TryParse(avatar, out UUID key) || key.IsZero())
                 return;
 
-            ILandObject land = World.LandChannel.GetLandObject(m_host.AbsolutePosition);
-            if (World.Permissions.CanEditParcelProperties(m_host.OwnerID, land, GroupPowers.LandManageBanned, false))
+            ILandObject parcel = World.LandChannel.GetLandObject(m_host.AbsolutePosition);
+            if (World.Permissions.CanEditParcelProperties(m_host.OwnerID, parcel, GroupPowers.LandManageBanned, false))
             {
-                int idx = land.LandData.ParcelAccessList.FindIndex(
-                        delegate(LandAccessEntry e)
-                        {
-                            if (e.Flags == AccessList.Ban && e.AgentID.Equals(key))
-                                return true;
-                            return false;
-                        });
-
-                if (idx != -1)
+                LandData land = parcel.LandData;
+                for (int i = 0; i < land.ParcelAccessList.Count; ++i)
                 {
-                    land.LandData.ParcelAccessList.RemoveAt(idx);
-                    World.EventManager.TriggerLandObjectUpdated((uint)land.LandData.LocalID, land);
+                    LandAccessEntry e = land.ParcelAccessList[i];
+                    if (e.Flags == AccessList.Ban && e.AgentID.Equals(key))
+                    {
+                        land.ParcelAccessList.RemoveAt(i);
+                        World.EventManager.TriggerLandObjectUpdated((uint)land.LocalID, parcel);
+                        break;
+                    }
                 }
             }
             ScriptSleep(m_sleepMsOnRemoveFromLandBanList);
@@ -13811,6 +13808,8 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             return Convert.ToBase64String(data1);
         }
 
+        static Regex llHTTPRequestRegex = new(@"^(https?:\/\/)(\w+):(\w+)@(.*)$", RegexOptions.Compiled);
+
         public LSL_Key llHTTPRequest(string url, LSL_List parameters, string body)
         {
             IHttpRequestModule httpScriptMod = m_ScriptEngine.World.RequestModuleInterface<IHttpRequestModule>();
@@ -13820,40 +13819,48 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if(!httpScriptMod.CheckThrottle(m_host.LocalId, m_host.OwnerID))
                 return ScriptBaseClass.NULL_KEY;
 
-            try
-            {
-                Uri m_checkuri = new(url);
-                if (m_checkuri.Scheme != Uri.UriSchemeHttp && m_checkuri.Scheme != Uri.UriSchemeHttps)
-                {
-                    Error("llHTTPRequest", "Invalid url schema");
-                    return string.Empty;
-                }
-            }
-            catch
+            if(!Uri.TryCreate(url, UriKind.Absolute, out Uri m_checkuri))
             {
                 Error("llHTTPRequest", "Invalid url");
                 return string.Empty;
             }
 
+            if (m_checkuri.Scheme != Uri.UriSchemeHttp && m_checkuri.Scheme != Uri.UriSchemeHttps)
+            {
+                Error("llHTTPRequest", "Invalid url schema");
+                return string.Empty;
+            }
+
+            if (!httpScriptMod.CheckAllowed(m_checkuri))
+            {
+                Error("llHttpRequest", string.Format("Request to {0} disallowed by filter", url));
+                return string.Empty;
+            }
+
+            Dictionary<string, string> httpHeaders = new();
             List<string> param = new();
-            bool  ok;
             int nCustomHeaders = 0;
+            int flag;
 
             for (int i = 0; i < parameters.Data.Length; i += 2)
             {
-                ok = Int32.TryParse(parameters.Data[i].ToString(), out int flag);
-                if (!ok || flag < 0 ||
-                    flag > (int)HttpRequestConstants.HTTP_PRAGMA_NO_CACHE)
+                object di = parameters.Data[i];
+                if(di is LSL_Integer li )
+                    flag = li.value;
+                else if (di is int ldi)
+                    flag = ldi;
+                else flag = -1;
+
+                if(flag < 0 || flag > (int)HttpRequestConstants.HTTP_PRAGMA_NO_CACHE)
                 {
                     Error("llHTTPRequest", "Parameter " + i.ToString() + " is an invalid flag");
                     ScriptSleep(200);
                     return string.Empty;
                 }
 
-                param.Add(parameters.Data[i].ToString());       //Add parameter flag
-
                 if (flag != (int)HttpRequestConstants.HTTP_CUSTOM_HEADER)
                 {
+                    param.Add(flag.ToString());       //Add parameter flag
                     param.Add(parameters.Data[i+1].ToString()); //Add parameter value
                 }
                 else
@@ -13906,17 +13913,15 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             noskip = false;
                         }
 
-                        string paramValue = parameters.Data[i + 1].ToString();
-                        if(paramName.Length + paramValue.Length > 253)
-                        {
-                            Error("llHTTPRequest", "name and value length exceds 253 characters for custom header at parameter " + i.ToString());
-                            return string.Empty;
-                        }
-
                         if (noskip)
                         {
-                            param.Add(paramName);
-                            param.Add(paramValue);
+                            string paramValue = parameters.Data[i + 1].ToString();
+                            if (paramName.Length + paramValue.Length > 253)
+                            {
+                                Error("llHTTPRequest", "name and value length exceds 253 characters for custom header at parameter " + i.ToString());
+                                return string.Empty;
+                            }
+                            httpHeaders[paramName] = paramValue;
                             nCustomHeaders++;
                         }
 
@@ -13945,8 +13950,6 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 ownerName = scenePresence.Name;
 
             RegionInfo regionInfo = World.RegionInfo;
-
-            Dictionary<string, string> httpHeaders =new();
 
             if (!string.IsNullOrWhiteSpace(m_lsl_shard))
                 httpHeaders["X-SecondLife-Shard"] = m_lsl_shard;
@@ -13993,17 +13996,9 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                     url = url[..idx];
             }
 
-            string authregex = @"^(https?:\/\/)(\w+):(\w+)@(.*)$";
-            Regex r = new(authregex);
-            //int[] gnums = r.GetGroupNumbers();
-            Match m = r.Match(url);
+            Match m = llHTTPRequestRegex.Match(url);
             if (m.Success)
             {
-                //for (int i = 1; i < gnums.Length; i++)
-                //{
-                    //System.Text.RegularExpressions.Group g = m.Groups[gnums[i]];
-                    //CaptureCollection cc = g.Captures;
-                //}
                 if (m.Groups.Count == 5)
                 {
                     httpHeaders["Authorization"] = String.Format("Basic {0}", Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(m.Groups[2].ToString() + ":" + m.Groups[3].ToString())));
@@ -14011,13 +14006,8 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 }
             }
 
-            UUID reqID = httpScriptMod.StartHttpRequest(m_host.LocalId, m_item.ItemID, url, param, httpHeaders, body,
-                    out HttpInitialRequestStatus status);
-
-            if (status == HttpInitialRequestStatus.DISALLOWED_BY_FILTER)
-                Error("llHttpRequest", string.Format("Request to {0} disallowed by filter", url));
-
-            return reqID.IsZero() ? "" : reqID.ToString();
+            UUID reqID = httpScriptMod.StartHttpRequest(m_host.LocalId, m_item.ItemID, url, param, httpHeaders, body);
+            return reqID.IsZero() ? string.Empty : reqID.ToString();
         }
 
 
@@ -14026,39 +14016,40 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             // Partial implementation: support for parameter flags needed
             //   see http://wiki.secondlife.com/wiki/llHTTPResponse
 
-            m_UrlModule?.HttpResponse(new UUID(id), status,body);
+            m_UrlModule?.HttpResponse(new UUID(id), status, body);
         }
 
         public void llResetLandBanList()
         {
-            LandData land = World.LandChannel.GetLandObject(m_host.AbsolutePosition).LandData;
-            if (land.ParcelAccessList.Count > 0 && land.OwnerID.Equals(m_host.OwnerID))
+            ILandObject parcel = World.LandChannel.GetLandObject(m_host.AbsolutePosition);
+            if (World.Permissions.CanEditParcelProperties(m_host.OwnerID, parcel, GroupPowers.LandManageBanned, false))
             {
-                var todelete = new List<LandAccessEntry>();
+                LandData land = parcel.LandData;
+                var tokeep = new List<LandAccessEntry>();
                 foreach (LandAccessEntry entry in land.ParcelAccessList)
                 {
-                    if (entry.Flags == AccessList.Ban)
-                        todelete.Add(entry);
+                    if (entry.Flags != AccessList.Ban)
+                        tokeep.Add(entry);
                 }
-                foreach (LandAccessEntry entry in todelete)
-                    land.ParcelAccessList.Remove(entry);
+                land.ParcelAccessList = tokeep;
+                land.Flags &= ~(uint)ParcelFlags.UseBanList;
             }
             ScriptSleep(m_sleepMsOnResetLandBanList);
         }
 
         public void llResetLandPassList()
         {
-            LandData land = World.LandChannel.GetLandObject(m_host.AbsolutePosition).LandData;
-            if (land.ParcelAccessList.Count > 0 && land.OwnerID.Equals(m_host.OwnerID))
+            ILandObject parcel = World.LandChannel.GetLandObject(m_host.AbsolutePosition);
+            if (World.Permissions.CanEditParcelProperties(m_host.OwnerID, parcel, GroupPowers.LandManagePasses, false))
             {
-                var todelete = new List<LandAccessEntry>();
+                LandData land = parcel.LandData;
+                var tokeep = new List<LandAccessEntry>();
                 foreach (LandAccessEntry entry in land.ParcelAccessList)
                 {
-                    if (entry.Flags == AccessList.Access)
-                        todelete.Add(entry);
+                    if (entry.Flags != AccessList.Access)
+                        tokeep.Add(entry);
                 }
-                foreach (LandAccessEntry entry in todelete)
-                    land.ParcelAccessList.Remove(entry);
+                land.ParcelAccessList = tokeep;
             }
             ScriptSleep(m_sleepMsOnResetLandPassList);
         }
@@ -17679,17 +17670,23 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
         private static string ListToJson(object o)
         {
-            if (o is LSL_Float || o is double)
+            if (o is double od)
             {
-                if (o is not double float_val)
-                    float_val = ((LSL_Float)o).value;
-
-                if(double.IsInfinity(float_val))
+                 if(double.IsInfinity(od))
                     return  "\"Inf\"";
-                if(double.IsNaN(float_val))
+                if(double.IsNaN(od))
                     return  "\"NaN\"";
 
-                return ((LSL_Float)float_val).ToString();
+                return od.ToString();
+            }
+            if (o is LSL_Float olf)
+            {
+                 if (double.IsInfinity(olf.value))
+                    return "\"Inf\"";
+                if (double.IsNaN(olf.value))
+                    return "\"NaN\"";
+
+                return olf.value.ToString();
             }
             if (o is LSL_Integer LSL_Integero)
             {
@@ -17701,39 +17698,45 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             }
             if (o is LSL_Rotation LSL_Rotationo)
             {
-                StringBuilder sb = new(128);
-                sb.Append('\"');
-                sb.Append(LSL_Rotationo.ToString());
-                sb.Append('\"');
-                return sb.ToString();
+                return $"\"{LSL_Rotationo}\"";
             }
             if (o is LSL_Vector LSL_Vectoro)
             {
-                StringBuilder sb = new(128);
-                sb.Append('\"');
-                sb.Append(LSL_Vectoro.ToString());
-                sb.Append('\"');
-                return sb.ToString();
+                return $"\"{LSL_Vectoro}\"";
             }
-            if (o is LSL_String || o is string)
+            if (o is string str)
             {
-                if (o is not string str)
-                    str = ((LSL_String)o).m_string;
-
-                if(str == ScriptBaseClass.JSON_TRUE || str == "true")
-                    return "true";
-                if(str == ScriptBaseClass.JSON_FALSE ||str == "false")
-                    return "false";
-                if(str == ScriptBaseClass.JSON_NULL || str == "null")
-                    return "null";
                 str = str.Trim();
-                if(str.Length == 0)
+                if (str.Length == 0)
                     return "\"\"";
                 if (str[0] == '{')
                     return str;
                 if (str[0] == '[')
                     return str;
+                if (str.Equals(ScriptBaseClass.JSON_TRUE) || str.Equals("true"))
+                    return "true";
+                if(str.Equals(ScriptBaseClass.JSON_FALSE) || str.Equals("false"))
+                    return "false";
+                if(str.Equals(ScriptBaseClass.JSON_NULL) || str.Equals("null"))
+                    return "null";
                 return EscapeForJSON(str, true);
+            }
+            if (o is LSL_String olstr)
+            {
+                string lstr = olstr.m_string.Trim();
+                if (lstr.Length == 0)
+                    return "\"\"";
+                if (lstr[0] == '{')
+                    return lstr;
+                if (lstr[0] == '[')
+                    return lstr;
+                if (lstr.Equals(ScriptBaseClass.JSON_TRUE) || lstr.Equals( "true"))
+                    return "true";
+                if (lstr.Equals(ScriptBaseClass.JSON_FALSE) || lstr.Equals("false"))
+                    return "false";
+                if (lstr.Equals(ScriptBaseClass.JSON_NULL) || lstr.Equals( "null"))
+                    return "null";
+                return EscapeForJSON(lstr, true);
             }
             throw new IndexOutOfRangeException();
         }
