@@ -324,6 +324,7 @@ namespace WebRtcVoice
 
             if (!scene.TryGetScenePresence(agentID, out ScenePresence sp) || sp.IsDeleted)
             {
+                m_log.Warn($"{logHeader} ChatSessionRequest: scene presence not found or deleted for agent {agentID}");
                 response.StatusCode = (int)HttpStatusCode.NotFound;
                 return;
             }
@@ -331,11 +332,10 @@ namespace WebRtcVoice
             OSDMap reqmap = BodyToMap(request, "[ChatSessionRequest]");
             if (reqmap is null)
             {
+                m_log.Warn($"{logHeader} ChatSessionRequest: message body not parsable in request for agent {agentID}");
                 response.StatusCode = (int)HttpStatusCode.NoContent;
                 return;
             }
-
-            m_log.Debug($"[WebRTC] ChatSessionRequest");
 
             if (!reqmap.TryGetString("method", out string method))
             {
@@ -371,18 +371,26 @@ namespace WebRtcVoice
                         newSessionID = UUID.Random();
 
                     IEventQueue queue = scene.RequestModuleInterface<IEventQueue>();
-                    queue.ChatterBoxSessionStartReply(
-                            newSessionID,
-                            sp.Name,
-                            2,
-                            false,
-                            true,
-                            sessionID,
-                            true,
-                            string.Empty,
-                            agentID);
+                    if (queue is null)
+                    {
+                        m_log.ErrorFormat("{0}: no event queue for scene {1}", logHeader, scene.RegionInfo.RegionName);
+                        response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                    }
+                    else
+                    {
+                        queue.ChatterBoxSessionStartReply(
+                                newSessionID,
+                                sp.Name,
+                                2,
+                                false,
+                                true,
+                                sessionID,
+                                true,
+                                string.Empty,
+                                agentID);
 
-                    response.StatusCode = (int)HttpStatusCode.OK;
+                        response.StatusCode = (int)HttpStatusCode.OK;
+                    }
                     break;
                 default:
                     response.StatusCode = (int)HttpStatusCode.BadRequest;
