@@ -331,7 +331,7 @@ namespace WebRtcVoice
             OSDMap reqmap = BodyToMap(request, "[ChatSessionRequest]");
             if (reqmap is null)
             {
-                response.StatusCode = (int)HttpStatusCode.NotFound;
+                response.StatusCode = (int)HttpStatusCode.NoContent;
                 return;
             }
 
@@ -339,12 +339,14 @@ namespace WebRtcVoice
 
             if (!reqmap.TryGetString("method", out string method))
             {
+                m_log.Warn($"[WebRTC] ChatSessionRequest: missing required 'method' field in request for agent {agentID}");
                 response.StatusCode = (int)HttpStatusCode.NotFound;
                 return;
             }
 
             if (!reqmap.TryGetUUID("session-id", out UUID sessionID))
             {
+                m_log.Warn($"[WebRTC] ChatSessionRequest: missing required 'session-id' field in request for agent {agentID}");
                 response.StatusCode = (int)HttpStatusCode.NotFound;
                 return;
             }
@@ -371,7 +373,7 @@ namespace WebRtcVoice
                     IEventQueue queue = scene.RequestModuleInterface<IEventQueue>();
                     queue.ChatterBoxSessionStartReply(
                             newSessionID,
-                            OSD.FromString(sp.Name),
+                            sp.Name,
                             2,
                             false,
                             true,
