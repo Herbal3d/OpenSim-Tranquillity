@@ -60,7 +60,7 @@ namespace osWebRtcVoice
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private static readonly string logHeader = "[REGION WEBRTC VOICE]";
 
-        private static byte[] llsdUndefAnswerBytes = Util.UTF8.GetBytes("<llsd><undef /></llsd>"); 
+        private static byte[] llsdUndefAnswerBytes = Util.UTF8.GetBytes("<llsd><undef /></llsd>");
         private bool _MessageDetails = false;
 
         // Control info
@@ -195,7 +195,7 @@ namespace osWebRtcVoice
                 return;
             }
 
-            if(request.HttpMethod != "POST")
+            if (request.HttpMethod != "POST")
             {
                 m_log.DebugFormat($"[{logHeader}][ProvisionVoice]: Not a POST request. Agent={agentID}");
                 response.StatusCode = (int)HttpStatusCode.NotFound;
@@ -245,7 +245,7 @@ namespace osWebRtcVoice
                         return;
                     }
 
-                    if(!scene.TryGetScenePresence(agentID, out ScenePresence sp))
+                    if (!scene.TryGetScenePresence(agentID, out ScenePresence sp))
                     {
                         m_log.Debug($"{logHeader}[ProvisionVoice]:avatar not found");
                         response.RawBuffer = llsdUndefAnswerBytes;
@@ -253,7 +253,7 @@ namespace osWebRtcVoice
                         return;
                     }
 
-                    if(map.TryGetInt("parcel_local_id", out int parcelID))
+                    if (map.TryGetInt("parcel_local_id", out int parcelID))
                     {
                         ILandObject parcel = scene.LandChannel.GetLandObject(parcelID);
                         if (parcel == null)
@@ -262,7 +262,7 @@ namespace osWebRtcVoice
                             response.StatusCode = (int)HttpStatusCode.NotFound;
                             return;
                         }
-                        
+
                         LandData land = parcel.LandData;
                         if (land == null)
                         {
@@ -281,9 +281,12 @@ namespace osWebRtcVoice
 
                         if ((land.Flags & (uint)ParcelFlags.UseEstateVoiceChan) != 0)
                         {
+                            // By removing the parcel_local_id, the voice service will treat this as an estate channel
+                            //    request and return the appropriate voice credentials for the estate channel
+                            //    instead of a parcel channel
                             map.Remove("parcel_local_id"); // estate channel
                         }
-                        else if(parcel.IsRestrictedFromLand(agentID) || parcel.IsBannedFromLand(agentID))
+                        else if (parcel.IsRestrictedFromLand(agentID) || parcel.IsBannedFromLand(agentID))
                         {
                             // check Z distance?
                             m_log.Debug($"{logHeader}[ProvisionVoice]:agent not allowed on parcel");
@@ -298,7 +301,7 @@ namespace osWebRtcVoice
             // The checks passed. Send the request to the voice service.
             OSDMap resp = voiceService.ProvisionVoiceAccountRequest(map, agentID, scene.RegionInfo.RegionID);
 
-            if(resp is not null)
+            if (resp is not null)
             {
                 if (_MessageDetails) m_log.DebugFormat($"{logHeader}[ProvisionVoice]: response: {resp}");
 
@@ -327,7 +330,7 @@ namespace osWebRtcVoice
                 return;
             }
 
-            if(request.HttpMethod != "POST")
+            if (request.HttpMethod != "POST")
             {
                 m_log.Error($"[{logHeader}][VoiceSignaling]: Not a POST request. Agent={agentID}");
                 response.StatusCode = (int)HttpStatusCode.NotFound;
@@ -472,19 +475,21 @@ namespace osWebRtcVoice
         {
             try
             {
-                using Stream inputStream = request.InputStream;
-                if (inputStream.Length > 0)
+                using (Stream inputStream = request.InputStream)
                 {
-                    OSD tmp = OSDParser.DeserializeLLSDXml(inputStream);
-                    if (_MessageDetails)
-                        m_log.Debug($"{pCaller} BodyToMap: Request: {tmp}");
-                    if(tmp is OSDMap map)
-                        return map;
+                    if (inputStream.Length > 0)
+                    {
+                        OSD tmp = OSDParser.DeserializeLLSDXml(inputStream);
+                        if (_MessageDetails)
+                            m_log.Debug($"{pCaller} BodyToMap: Request: {tmp}");
+                        if (tmp is OSDMap map)
+                            return map;
+                    }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                m_log.Debug($"{pCaller} BodyToMap: Fail to decode LLSDXml request");
+                m_log.Error($"{pCaller} BodyToMap: Exception: {ex}");
             }
             return null;
         }

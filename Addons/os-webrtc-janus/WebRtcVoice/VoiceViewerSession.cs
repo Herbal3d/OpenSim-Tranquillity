@@ -48,11 +48,7 @@ namespace osWebRtcVoice
         }
         public string ViewerSessionID { get; set; }
         public IWebRtcVoiceService VoiceService { get; set; }
-        public string VoiceServiceSessionId
-        {
-            get => throw new System.NotImplementedException();
-            set => throw new System.NotImplementedException();
-        }
+        public string VoiceServiceSessionId { get; set; }
         public UUID RegionId { get; set; }
         public UUID AgentId { get; set; }
 
@@ -75,6 +71,20 @@ namespace osWebRtcVoice
             {
                 pViewerSessions = ViewerSessions.Where(v => v.Value.AgentId == pAgentId);
                 return pViewerSessions.Count() > 0;
+            }
+        }
+        public static bool TryGetViewerSessionByAgentAndRegion(UUID pAgentId, UUID pRegionId, out IVoiceViewerSession pViewerSession)
+        {
+            lock (ViewerSessions)
+            {
+                var session = ViewerSessions.Values.FirstOrDefault(v => v.AgentId == pAgentId && v.RegionId == pRegionId);
+                if (session is not null)
+                {
+                    pViewerSession = session;
+                    return true;
+                }
+                pViewerSession = null;
+                return false;
             }
         }
         // Get a viewer session by the VoiceService session ID
@@ -125,7 +135,11 @@ namespace osWebRtcVoice
 
         public Task Shutdown()
         {
-            throw new System.NotImplementedException();
+            if (!string.IsNullOrEmpty(ViewerSessionID))
+            {
+                RemoveViewerSession(ViewerSessionID);
+            }
+            return Task.CompletedTask;
         }
     }
 }

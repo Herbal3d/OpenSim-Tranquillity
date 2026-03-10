@@ -97,7 +97,7 @@ namespace osWebRtcVoice
                     case "event":
                         if (abResp.AudioBridgeErrorCode == 486)
                         {
-                            m_log.WarnFormat("{0} CreateRoom. Room {1} already exists. Reusing! {2}", LogHeader, pRoomId, abResp.ToString());
+                            m_log.InfoFormat("{0} CreateRoom. Room {1} already exists. Reusing existing room (reconnect).", LogHeader, pRoomId);
                             // if room already exists, just use it
                             ret = new JanusRoom(this, pRoomId);
                         }

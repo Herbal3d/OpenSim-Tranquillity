@@ -27,6 +27,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Net.Http;
 using System.Net.Mime;
 using System.Reflection;
@@ -151,7 +152,7 @@ namespace osWebRtcVoice
                                 break;
                             case 459:
                                 // This is the error code for handle already destroyed
-                                m_log.DebugFormat("{0} DestroySession: Handle not found", LogHeader);
+                                if (_MessageDetails) m_log.DebugFormat("{0} DestroySession: Handle not found", LogHeader);
                                 break;
                             default:
                                 m_log.ErrorFormat("{0} DestroySession: failed {1}", LogHeader, eResp.errorReason);
@@ -181,11 +182,11 @@ namespace osWebRtcVoice
             // if the audiobridge is active, the trickle message is sent to it
             if (pVSession.AudioBridge is null)
             {
-                ret = await SendToJanusNoWait(new TrickleReq(pVSession));
+                ret = await SendToJanusNoWait(new TrickleReq(pVSession, pCandidates));
             }
             else
             {
-                ret = await SendToJanusNoWait(new TrickleReq(pVSession), pVSession.AudioBridge.PluginUri);
+                ret = await SendToJanusNoWait(new TrickleReq(pVSession, pCandidates), pVSession.AudioBridge.PluginUri);
             }
             return ret;
         }
@@ -223,7 +224,7 @@ namespace osWebRtcVoice
             public DateTime RequestTime;
             public TaskCompletionSource<JanusMessageResp> TaskCompletionSource;
         }
-        private Dictionary<string, OutstandingRequest> _OutstandingRequests = new Dictionary<string, OutstandingRequest>();
+        private readonly ConcurrentDictionary<string, OutstandingRequest> _OutstandingRequests = new ConcurrentDictionary<string, OutstandingRequest>();
 
         // Send a request directly to the Janus server.
         // NOTE: this is probably NOT what you want to do. This is a direct call that is outside the session.
@@ -256,7 +257,7 @@ namespace osWebRtcVoice
                     RequestTime = DateTime.Now,
                     TaskCompletionSource = new TaskCompletionSource<JanusMessageResp>()
                 };
-                _OutstandingRequests.Add(pReq.TransactionId, outReq);
+                _OutstandingRequests[pReq.TransactionId] = outReq;
 
                 string reqStr = pReq.ToJson();
 
@@ -273,29 +274,32 @@ namespace osWebRtcVoice
                     {
                         // Some messages are asynchronous and completed with an event
                         if (_MessageDetails) m_log.DebugFormat("{0} SendToJanus: ack response {1}", LogHeader, respStr);
-                        if (_OutstandingRequests.TryGetValue(pReq.TransactionId, out OutstandingRequest outstandingRequest))
-                        {
-                            ret = await outstandingRequest.TaskCompletionSource.Task;
-                            _OutstandingRequests.Remove(pReq.TransactionId);
-                        }
-                        // If there is no OutstandingRequest, the request was not waiting for an event or already processed
+
+                        // Wait on the local TaskCompletionSource instead of re-reading the dictionary.
+                        // This avoids a race where the long-poll thread already removed the request.
+                        ret = await outReq.TaskCompletionSource.Task;
                     }
                     else 
                     {
                         // If the response is not an ack, that means a synchronous request/response so return the response
-                        _OutstandingRequests.Remove(pReq.TransactionId);
+                        _OutstandingRequests.TryRemove(pReq.TransactionId, out _);
                         if (_MessageDetails) m_log.DebugFormat("{0} SendToJanus: response {1}", LogHeader, respStr);
                     }
                 }
                 else
                 {
                     m_log.ErrorFormat("{0} SendToJanus: response not successful {1}", LogHeader, response);
-                    _OutstandingRequests.Remove(pReq.TransactionId);
+                    _OutstandingRequests.TryRemove(pReq.TransactionId, out _);
                 }
             }
             catch (Exception e)
             {
                 m_log.ErrorFormat("{0} SendToJanus: exception {1}", LogHeader, e.Message);
+                _OutstandingRequests.TryRemove(pReq.TransactionId, out _);
+            }
+            finally
+            {
+                _OutstandingRequests.TryRemove(pReq.TransactionId, out _);
             }
 
             return ret;
@@ -369,16 +373,12 @@ namespace osWebRtcVoice
                 return false;
             }
 
-            bool ret = false;
-            lock (_OutstandingRequests)
+            if (_OutstandingRequests.TryRemove(pTransactionId, out pOutstandingRequest))
             {
-                if (_OutstandingRequests.TryGetValue(pTransactionId, out pOutstandingRequest))
-                {
-                    _OutstandingRequests.Remove(pTransactionId);
-                    ret = true;
-                }
+                return true;
             }
-            return ret;
+            pOutstandingRequest = null;
+            return false;
         }
 
         public Task<JanusMessageResp> SendToJanusAdmin(JanusMessageReq pReq)
@@ -438,7 +438,7 @@ namespace osWebRtcVoice
                 }
                 catch (TaskCanceledException e)
                 {
-                    m_log.DebugFormat("{0} GetFromJanus: task canceled: {1}", LogHeader, e.Message);
+                    if (_MessageDetails) m_log.DebugFormat("{0} GetFromJanus: task canceled: {1}", LogHeader, e.Message);
                     var eResp = new ErrorResp("GETERROR");
                     eResp.SetError(499, "Task canceled");
                     ret = eResp;
@@ -541,26 +541,48 @@ namespace osWebRtcVoice
                                         break;
                                     case "webrtcup":
                                         //  ICE and DTLS succeeded, and so Janus correctly established a PeerConnection with the user/application;
-                                        m_log.DebugFormat("{0} EventLongPoll: webrtcup {1}", LogHeader, resp.ToString());
+                                        string webrtcupSessionId = ExtractLogId(resp, "session_id");
+                                        string webrtcupSender = ExtractLogId(resp, "sender");
+                                        m_log.DebugFormat("{0} EventLongPoll: webrtcup session_id={1}, sender={2}",
+                                                            LogHeader,
+                                                            string.IsNullOrEmpty(webrtcupSessionId) ? "<none>" : webrtcupSessionId,
+                                                            string.IsNullOrEmpty(webrtcupSender) ? "<none>" : webrtcupSender);
                                         break;
                                     case "hangup":
                                         // The PeerConnection was closed, either by the user/application or by Janus itself;
                                         // If one is in the room, when a "hangup" event happens, it means that the user left the room.
-                                        m_log.DebugFormat("{0} EventLongPoll: hangup {1}", LogHeader, resp.ToString());
+                                        m_log.DebugFormat("{0} EventLongPoll: hangup session_id={1}, sender={2}, reason={3}, tx={4}",
+                                                        LogHeader,
+                                                        ExtractLogId(resp, "session_id"),
+                                                        ExtractLogId(resp, "sender"),
+                                                        resp.RawBody.TryGetString("reason", out string hangupReason) ? hangupReason : String.Empty,
+                                                        FormatTransactionId(resp.TransactionId));
                                         OnHangup?.Invoke(eventResp);
                                         break;
                                     case "detached":
                                         // a plugin asked the core to detach one of our handles
-                                        m_log.DebugFormat("{0} EventLongPoll: event {1}", LogHeader, resp.ToString());
+                                        m_log.DebugFormat("{0} EventLongPoll: detached session_id={1}, sender={2}, tx={3}",
+                                                        LogHeader,
+                                                        ExtractLogId(resp, "session_id"),
+                                                        ExtractLogId(resp, "sender"),
+                                                        FormatTransactionId(resp.TransactionId));
                                         OnDetached?.Invoke(eventResp);
                                         break;
                                     case "media":
                                         // Janus is receiving (receiving: true/false) audio/video (type: "audio/video") on this PeerConnection;
-                                        m_log.DebugFormat("{0} EventLongPoll: media {1}", LogHeader, resp.ToString());
+                                        m_log.DebugFormat("{0} EventLongPoll: media session_id={1}, sender={2}, tx={3}",
+                                                        LogHeader,
+                                                        ExtractLogId(resp, "session_id"),
+                                                        ExtractLogId(resp, "sender"),
+                                                        FormatTransactionId(resp.TransactionId));
                                         break;
                                     case "slowlink":
                                         // Janus detected a slowlink (uplink: true/false) on this PeerConnection;
-                                        m_log.DebugFormat("{0} EventLongPoll: slowlink {1}", LogHeader, resp.ToString());
+                                        m_log.DebugFormat("{0} EventLongPoll: slowlink session_id={1}, sender={2}, tx={3}",
+                                                        LogHeader,
+                                                        ExtractLogId(resp, "session_id"),
+                                                        ExtractLogId(resp, "sender"),
+                                                        FormatTransactionId(resp.TransactionId));
                                         break;
                                     case "error":
                                         m_log.DebugFormat("{0} EventLongPoll: error {1}", LogHeader, resp.ToString());
@@ -622,7 +644,7 @@ namespace osWebRtcVoice
                                                 break;
                                             case 499:
                                                 // "Task canceled" means the long poll was canceled
-                                                m_log.DebugFormat("{0} EventLongPoll: Task canceled. URI={1}", LogHeader, SessionUri);
+                                                if (_MessageDetails) m_log.DebugFormat("{0} EventLongPoll: Task canceled. URI={1}", LogHeader, SessionUri);
                                                 break;
                                             default:
                                                 m_log.DebugFormat("{0} EventLongPoll: unknown response. URI={1}: {2}",
@@ -651,8 +673,37 @@ namespace osWebRtcVoice
                         m_log.ErrorFormat("{0} EventLongPoll: exception {1}", LogHeader, e);
                     }
                 }
-                m_log.InfoFormat("{0} EventLongPoll: Exiting long poll loop", LogHeader);
+                if (_MessageDetails)
+                    m_log.InfoFormat("{0} EventLongPoll: Exiting long poll loop", LogHeader);
             });
+        }
+
+        private static string ExtractLogId(JanusMessageResp resp, string key)
+        {
+            if (resp?.RawBody is null || !resp.RawBody.TryGetValue(key, out OSD value) || value is null)
+                return string.Empty;
+
+            try
+            {
+                switch (value.Type)
+                {
+                    case OSDType.Integer:
+                    case OSDType.Binary:
+                    case OSDType.Array:
+                        return JanusMessage.OSDToLong(value).ToString();
+                    default:
+                        return value.AsString();
+                }
+            }
+            catch
+            {
+                return value.AsString();
+            }
+        }
+
+        private static string FormatTransactionId(string transactionId)
+        {
+            return String.IsNullOrEmpty(transactionId) ? "<event>" : transactionId;
         }
     }
 }

@@ -75,7 +75,7 @@ namespace osWebRtcVoice
                     m_log.DebugFormat("{0} loading {1}", LogHeader, localServiceModule);
 
                     object[] args = new object[0];
-                    m_WebRtcVoiceService = ServerUtils.LoadPlugin<IWebRtcVoiceService>(localServiceModule, args); 
+                    m_WebRtcVoiceService = ServerUtils.LoadPlugin<IWebRtcVoiceService>(localServiceModule, args);
 
                     // The WebRtcVoiceServiceModule is both an IWebRtcVoiceService and a ISharedRegionModule
                     //     so we can initialize it as if it was the region module.
@@ -124,7 +124,7 @@ namespace osWebRtcVoice
                 catch (Exception e)
                 {
                     m_log.ErrorFormat("{0} PVAR: exception {1}", LogHeader, e);
-                }   
+                }
             }
             else
             {

@@ -54,7 +54,7 @@ namespace osWebRtcVoice
         public OMV.UUID AgentId { get; set; }
 
         // Janus keeps track of the user by this ID
-        public int ParticipantId { get; set; }
+        public long ParticipantId { get; set; }
 
         // Connections to the Janus server
         public JanusSession Session { get; set; }
@@ -67,6 +67,11 @@ namespace osWebRtcVoice
         // Contains "type" and "sdp" fields
         public OSDMap Answer { get; set; }
 
+        private int _disconnectStarted;
+        public string DisconnectReason { get; private set; }
+        private readonly SemaphoreSlim _provisionLock = new SemaphoreSlim(1, 1);
+        public SemaphoreSlim ProvisionLock => _provisionLock;
+
         public JanusViewerSession(IWebRtcVoiceService pVoiceService)
         {
             ViewerSessionID = OMV.UUID.Random().ToString();
@@ -78,6 +83,16 @@ namespace osWebRtcVoice
             ViewerSessionID = pViewerSessionID;
             VoiceService = pVoiceService;
             m_log.Debug($"{LogHeader} JanusViewerSession created {ViewerSessionID}");
+        }
+
+        public bool TryStartDisconnect(string pReason)
+        {
+            if (Interlocked.CompareExchange(ref _disconnectStarted, 1, 0) == 0)
+            {
+                DisconnectReason = pReason;
+                return true;
+            }
+            return false;
         }
 
         // Send the messages to the voice service to try and get rid of the session
